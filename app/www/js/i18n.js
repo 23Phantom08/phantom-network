@@ -305,7 +305,10 @@ const EN = {
 	'Neuer Tag: Tageslimits zurückgesetzt': "New day: daily limits reset", 'automatisch ausgeschaltet': "turned off automatically",
 	'WLAN-Nachtschaltung:': "Wi‑Fi night mode:", 'wieder an': "back on", 'Pause beendet:': "Pause ended:", 'gestartet': "started",
 	'Die Rechte sind schon da (per SSH oder Firmware). Das Paket brauchst du nicht – damit tauchen die Rechte nur zusätzlich in der Weboberfläche unter System → Software auf.': "The permissions are already there (via SSH or firmware). You don't need the package – it only makes them show up in the web interface under System → Software as well.",
-	'· Kabel': "· Cable", 'WLAN-Liste': "Wi‑Fi list", 'ARP-Tabelle': "ARP table", 'Router-Pakete': "Router packages", 'ROUTER-RECHTE · ALLE ROUTER': "ROUTER PERMISSIONS · ALL ROUTERS", 'TAGESLIMIT-ZÄHLER · NUR MASTER': "DAILY LIMIT COUNTER · MASTER ONLY",
+	'· Kabel': "· Cable", 'Rechte-Paket entfernen?': "Remove permissions package?", 'Paket wird geändert …': "Changing package …",
+	'Wo die Rechte nicht zusätzlich per SSH oder Firmware da sind, fehlen danach die WLAN-Liste, „Kabelgerät online“ und die Temperatur.': "Where the permissions don't also come from SSH or the firmware, the Wi‑Fi list, “cable device online” and the temperature will be missing afterwards.",
+	'Das Paket bleibt auch nach einem Firmware-Update mit „Einstellungen behalten“. Entfernen geht auch in der Weboberfläche unter System → Software.': "The package survives a firmware update with “Keep settings”. You can also remove it in the web interface under System → Software.",
+	'Paket von 1 Router entfernt': "Package removed from 1 router", 'Nicht entfernt –': "Not removed –", 'WLAN-Liste': "Wi‑Fi list", 'ARP-Tabelle': "ARP table", 'Router-Pakete': "Router packages", 'ROUTER-RECHTE · ALLE ROUTER': "ROUTER PERMISSIONS · ALL ROUTERS", 'TAGESLIMIT-ZÄHLER · NUR MASTER': "DAILY LIMIT COUNTER · MASTER ONLY",
 	'Rechte einrichten': "Set up permissions", 'Paket installieren': "Install package", 'Wird eingerichtet …': "Setting up …", 'Auf allen Routern installiert': "Installed on all routers",
 	'Paket wird installiert …': "Installing package …", 'läuft': "running", 'offline': "offline", 'Rechte vollständig': "Permissions complete", '· Paket': "· package", '· per SSH': "· via SSH", '· Firmware': "· firmware",
 	'Router ohne volle Rechte': "router(s) without full permissions",
@@ -325,6 +328,9 @@ const EN_EXACT = new Set([ 'ROUTER', 'von', 'aktiv', 'Uhr', 'Art', 'Band', 'Stan
 
 /* Texte mit Zahlen: [Muster, Ersatz] – greifen vor den Textstücken */
 const EN_RX = [
+	[ /^Paket entfernen \((\d+) Router\)$/, (m, n) => 'Remove package (' + n + (n === '1' ? ' router)' : ' routers)') ],
+	[ /^Paket von (\d+) Routern entfernt$/, 'Package removed from $1 routers' ],
+	[ /^„phantom-rights“ wird von (\d+) (Router|Routern) entfernt\.$/, (m, n) => '“phantom-rights” will be removed from ' + n + (n === '1' ? ' router.' : ' routers.') ],
 	[ /^(Alle )?(\d+) Router funken auf Kanal (\d+)$/, (m, all, n, c) => (all ? 'All ' + n + ' routers' : n + (n === '1' ? ' router' : ' routers')) + ' on channel ' + c ],
 	[ /^(\d+) Router ohne volle Rechte$/, (m, n) => n + (n === '1' ? ' router' : ' routers') + ' without full permissions' ],
 	[ /^(Rechte einrichten|Paket installieren) \((\d+) Router\)$/, (m, a, n) => (a === 'Paket installieren' ? 'Install package' : 'Set up permissions') + ' (' + n + (n === '1' ? ' router)' : ' routers)') ],

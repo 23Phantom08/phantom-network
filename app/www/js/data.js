@@ -853,6 +853,7 @@ const Net = {
 	},
 	/* Router-Rechte als Paket „phantom-rights“ (nur die Rechte-Datei für rpcd) – ersetzt den SSH-Block */
 	async rightsInstall(r) { await this.pkgInstall(r, 'agent/phantom-rights.apk'); },
+	async rightsRemove(r) { await this.agentPm([ 'remove', 'phantom-rights' ], r); await new Promise((res) => setTimeout(res, 5000)); },
 	async pkgInstall(m, file) {
 		const [ apk, key ] = await Promise.all([ this.agentFile(file, true), this.agentFile('agent/phantom-agent.pem') ]);
 		const KEY = '/etc/apk/keys/phantom-agent.pem', PKG = '/tmp/upload.apk';

@@ -1401,7 +1401,7 @@ VIEWS.helper = () => {
 		const live = run && S.rightsAt === r.id;
 		const st = live ? 'run' : !i || !i.ok ? 'off' : i.acl ? 'ok' : 'miss';
 		const how = i && i.ok ? (i.rightsPkg ? ' · Paket' : i.rightsSsh ? ' · per SSH' : i.acl ? ' · Firmware' : '') : '';
-		const sub = st === 'run' ? 'Paket wird installiert …' : st === 'off' ? 'nicht erreichbar' : st === 'ok' ? 'Rechte vollständig' + how : 'Es fehlt: ' + (i.aclMissing || []).join(', ');
+		const sub = st === 'run' ? 'Paket wird geändert …' : st === 'off' ? 'nicht erreichbar' : st === 'ok' ? 'Rechte vollständig' + how : 'Es fehlt: ' + (i.aclMissing || []).join(', ');
 		const t = st === 'run' ? tag('info', 'läuft') : st === 'ok' ? tag('ok', 'vollständig') : st === 'off' ? tag('off', 'offline') : tag('warn', 'fehlen');
 		return row(icon('router', 20, '#0d0b16'), st === 'ok' ? 'var(--ok)' : st === 'run' ? 'var(--cyan)' : st === 'off' ? 'rgba(165,159,191,.35)' : 'var(--warn)', r.name || r.host, sub, t);
 	}).join('');
@@ -1409,10 +1409,12 @@ VIEWS.helper = () => {
 		: missing.length ? `<button class="ph-btn primary" data-a="rightsInstall">${icon('plus', 18)}&nbsp; Rechte einrichten (${missing.length} Router)</button>`
 		: noPkg.length ? `<button class="ph-btn primary" data-a="rightsInstall">${icon('plus', 18)}&nbsp; Paket installieren (${noPkg.length} Router)</button>`
 		: `<button class="ph-btn" disabled>${icon('check', 18)}&nbsp; Auf allen Routern installiert</button>`;
+	const withPkg = routers.filter((x) => x.i && x.i.ok && x.i.rightsPkg);
+	const rmBtn = withPkg.length && !run ? `<button class="ph-btn danger" data-a="rightsRemove">${icon('trash', 18)}&nbsp; Paket entfernen (${withPkg.length} Router)</button>` : '';
 	let body = '<div class="ph-h" style="padding:0 4px">ROUTER-RECHTE · ALLE ROUTER</div>';
 	body += missing.length
-		? `<div class="ph-banner warn"><div class="ph-line"><span style="flex:none;display:flex">${icon('lock', 22, 'var(--warn)')}</span><div><b>${missing.length} Router ohne volle Rechte</b><small>Ohne diese Rechte fehlen die WLAN-Liste, „Kabelgerät online“ und die Temperatur. Die App installiert dafür das kleine Paket „phantom-rights“ – ohne SSH.</small></div></div>${btn}</div>`
-		: `<div class="ph-banner ok"><div class="ph-line"><span style="flex:none;display:flex">${icon('check', 22, 'var(--ok)')}</span><div><b>Alle Router haben die Rechte</b><small>${noPkg.length ? 'Die Rechte sind schon da (per SSH oder Firmware). Das Paket brauchst du nicht – damit tauchen die Rechte nur zusätzlich in der Weboberfläche unter System → Software auf.' : 'Das Paket bleibt auch nach einem Firmware-Update mit „Einstellungen behalten“. Entfernen geht in der Weboberfläche unter System → Software.'}</small></div></div>${btn}</div>`;
+		? `<div class="ph-banner warn"><div class="ph-line"><span style="flex:none;display:flex">${icon('lock', 22, 'var(--warn)')}</span><div><b>${missing.length} Router ohne volle Rechte</b><small>Ohne diese Rechte fehlen die WLAN-Liste, „Kabelgerät online“ und die Temperatur. Die App installiert dafür das kleine Paket „phantom-rights“ – ohne SSH.</small></div></div>${btn}${rmBtn}</div>`
+		: `<div class="ph-banner ok"><div class="ph-line"><span style="flex:none;display:flex">${icon('check', 22, 'var(--ok)')}</span><div><b>Alle Router haben die Rechte</b><small>${noPkg.length ? 'Die Rechte sind schon da (per SSH oder Firmware). Das Paket brauchst du nicht – damit tauchen die Rechte nur zusätzlich in der Weboberfläche unter System → Software auf.' : 'Das Paket bleibt auch nach einem Firmware-Update mit „Einstellungen behalten“. Entfernen geht auch in der Weboberfläche unter System → Software.'}</small></div></div>${btn}${rmBtn}</div>`;
 	body += `<div class="ph-card list"><div class="ph-h">STATUS</div>${list}</div>
 		<details class="ph-card pad" style="display:block"><summary class="ph-h" style="min-height:32px">Ohne Paketverwaltung? SSH-Block</summary>
 		<div style="display:flex;flex-direction:column;gap:10px;margin-top:8px"><div class="ph-hint">Nur nötig, wenn der Router keine Pakete installieren kann (sehr kleine eigene Firmware). Der Block legt die Datei <span class="mono">root.json</span> an und trägt sie in <span class="mono">/etc/sysupgrade.conf</span> ein, damit sie ein Firmware-Update übersteht.</div>
@@ -1787,6 +1789,22 @@ A.reboot = (x) => {
 		<button class="ph-btn danger" data-a="rebootYes" data-x="${x}">Neu starten</button><button class="ph-btn" data-a="sheetClose">Abbrechen</button>`);
 };
 A.agentInstall = () => act('agent', () => Net.agentInstall(), 'Tageslimit ist eingerichtet');
+A.rightsRemove = () => {
+	const n = Net.routers.filter((r) => { const i = Net.info[r.id]; return i && i.ok && i.rightsPkg; }).length;
+	openSheet(`<h2>Rechte-Paket entfernen?</h2><div class="ph-hint">„phantom-rights“ wird von ${n} ${n === 1 ? 'Router' : 'Routern'} entfernt.</div><div class="ph-hint">Wo die Rechte nicht zusätzlich per SSH oder Firmware da sind, fehlen danach die WLAN-Liste, „Kabelgerät online“ und die Temperatur.</div>
+	<button class="ph-btn danger" data-a="rightsRemoveYes">Entfernen</button><button class="ph-btn" data-a="sheetClose">Abbrechen</button>`);
+};
+A.rightsRemoveYes = () => { closeSheet(); act('rights', async () => {
+	const todo = Net.routers.filter((r) => { const i = Net.info[r.id]; return i && i.ok && i.rightsPkg; });
+	const bad = [];
+	for (const r of todo) {
+		S.rightsAt = r.id; renderSoft();
+		try { await Net.rightsRemove(r); } catch (e) { bad.push((r.name || r.host) + ': ' + (e.message || e)); }
+	}
+	S.rightsAt = null;
+	if (bad.length) throw new Error('Nicht entfernt – ' + bad.join(' · '));
+	return todo.length;
+}, (n) => n === 1 ? 'Paket von 1 Router entfernt' : 'Paket von ' + n + ' Routern entfernt'); };
 /* Rechte-Paket auf jedem erreichbaren Router ohne Paket, nacheinander */
 A.rightsInstall = () => act('rights', async () => {
 	// fehlen irgendwo Rechte: nur dort; sonst auf allen Routern, die das Paket noch nicht haben
