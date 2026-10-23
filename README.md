@@ -23,6 +23,7 @@ The app talks directly to your routers through the same interface the OpenWrt we
 | Part | Where it runs | What it does |
 |---|---|---|
 | `app/` | Android phone | Capacitor app (plain HTML/CSS/JS, no framework) plus a small native plugin for HTTPS pinning, notifications, fingerprint and backups |
+| `rights/` | every router | `phantom-rights` package: only the rpcd permission file the app needs |
 | `agent/` | master router | optional `phantom-agent` package (ucode service): counts usage time and data per device for daily limits and usage statistics, and cuts running connections when a device gets blocked |
 
 Profiles, pauses, schedules and limits are stored as normal firewall rules in the router's UCI configuration, so every phone with the app sees the same state. The agent package ships inside the app and is installed with one tap (Family → profile → set up daily limit).
@@ -30,7 +31,7 @@ Profiles, pauses, schedules and limits are stored as normal firewall rules in th
 ### Router requirements
 
 - OpenWrt 25.12 with LuCI (`rpcd`, `uhttpd`); `luci-ssl` for HTTPS
-- The app signs in as `root`. On stock OpenWrt some ubus calls are not allowed for `root` over RPC; the app shows a small SSH snippet (More → Router permissions) that adds the missing read permissions (one ACL file).
+- The app signs in as `root`. On stock OpenWrt some ubus calls are not allowed for `root` over RPC. The app installs the small `phantom-rights` package (one ACL file) on every router with one tap (More → Router packages) – no SSH needed. For routers without a package manager there is an equivalent SSH snippet.
 - Optional: the `phantom-agent` package on the master (installed from within the app, see below) for daily limits and usage statistics. It also cuts running connections when a device gets paused – without it, a pause only affects new connections.
 
 ## Building the APK
@@ -47,7 +48,7 @@ On the first build a new signing key is generated in `keys/` (`phantom.jks` + `p
 
 ### Rebuilding the agent package
 
-Only needed when `agent/` changes – see [`agent/README.md`](agent/README.md).
+Only needed when `agent/` or `rights/` change – see [`agent/README.md`](agent/README.md). `rights/build.sh` works the same way and uses the same signing key.
 
 ## Project layout
 
@@ -56,6 +57,7 @@ app/                Capacitor project
   www/              the app itself (index.html, js/, css/, fonts, agent package)
   android/          Android project incl. native plugin (de.phantomnetwork.app)
 agent/              phantom-agent package for the master router
+rights/             phantom-rights package (router permissions)
 build.sh            APK build script (runs inside the container)
 docker-compose.yml  build container
 ```

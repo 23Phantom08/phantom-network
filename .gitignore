@@ -12,6 +12,8 @@ out/
 agent/out/
 *.apk
 !app/www/agent/phantom-agent.apk
+!app/www/agent/phantom-rights.apk
+rights/out/
 
 # Dependencies and generated files
 node_modules/

@@ -1,0 +1,25 @@
+{
+	"phantom-rights": {
+		"description": "Phantom Network app: full ubus access and the files it reads (Wi-Fi clients, ARP table, temperature)",
+		"read": {
+			"ubus": {
+				"*": [ "*" ]
+			},
+			"file": {
+				"/tmp/dhcp.leases": [ "read" ],
+				"/tmp/hosts/*": [ "read" ],
+				"/etc/hosts": [ "read" ],
+				"/proc/stat": [ "read" ],
+				"/proc/net/arp": [ "read" ],
+				"/proc/*/net/arp": [ "read" ],
+				"/sys/class/thermal/*/temp": [ "read" ],
+				"/sys/devices/virtual/thermal/*/temp": [ "read" ]
+			}
+		},
+		"write": {
+			"ubus": {
+				"*": [ "*" ]
+			}
+		}
+	}
+}

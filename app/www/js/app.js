@@ -1224,7 +1224,7 @@ VIEWS.more = () => {
 		${item('shield', 'var(--ok)', 'VPN (WireGuard)', v ? (v.on ? 'Eingeschaltet' : 'Ausgeschaltet') : 'nicht eingerichtet', 'vpn')}
 		${item('bell', 'var(--warn)', 'Benachrichtigungen', S.notify.on ? 'An' : 'Aus', 'notify')}
 		${item('share', 'var(--ok)', 'Backups', 'Einstellungen aller Router aufs Handy sichern', 'backup')}
-		${item('lock', 'var(--cyan)', 'Router-Rechte', Net.missingRights().length ? 'Fehlen auf ' + Net.missingRights().length + ' Router' : 'Auf allen Routern vollständig', 'helper', Net.missingRights().length ? '<span class="ph-badge new">!</span>' : '')}
+		${item('lock', 'var(--cyan)', 'Router-Pakete', Net.missingRights().length ? 'Rechte fehlen auf ' + Net.missingRights().length + ' Router' : 'Rechte vollständig' + (Net.caps().helper ? ' · Tageslimit-Zähler' : ''), 'helper', Net.missingRights().length ? '<span class="ph-badge new">!</span>' : '')}
 	</div>
 	<div class="ph-card list">
 		${item('lock', 'var(--violet)', 'Sicherheit', S.lock.on ? 'App-Login an' + (S.lock.fp ? ' · Fingerabdruck' : '') : 'App-Login aus', 'security')}
@@ -1393,18 +1393,42 @@ function phoneVpnCard() {
 	</div>`;
 }
 VIEWS.helper = () => {
-	const list = Net.routers.map((r) => {
-		const i = Net.info[r.id];
-		const st = !i || !i.ok ? 'nicht erreichbar' : i.acl ? 'vollständig' : 'fehlen';
-		return row(icon('router', 20, '#0d0b16'), st === 'vollständig' ? 'var(--ok)' : 'var(--warn)', r.name || r.host, st === 'fehlen' ? 'Es fehlt: ' + (i.aclMissing || []).join(', ') : 'Rechte ' + st, '');
+	const routers = Net.routers.map((r) => ({ r, i: Net.info[r.id] }));
+	const missing = routers.filter((x) => x.i && x.i.ok && !x.i.acl);
+	const noPkg = routers.filter((x) => x.i && x.i.ok && !x.i.rightsPkg);
+	const run = S.busy.rights;
+	const list = routers.map(({ r, i }) => {
+		const live = run && S.rightsAt === r.id;
+		const st = live ? 'run' : !i || !i.ok ? 'off' : i.acl ? 'ok' : 'miss';
+		const how = i && i.ok ? (i.rightsPkg ? ' · Paket' : i.rightsSsh ? ' · per SSH' : i.acl ? ' · Firmware' : '') : '';
+		const sub = st === 'run' ? 'Paket wird installiert …' : st === 'off' ? 'nicht erreichbar' : st === 'ok' ? 'Rechte vollständig' + how : 'Es fehlt: ' + (i.aclMissing || []).join(', ');
+		const t = st === 'run' ? tag('info', 'läuft') : st === 'ok' ? tag('ok', 'vollständig') : st === 'off' ? tag('off', 'offline') : tag('warn', 'fehlen');
+		return row(icon('router', 20, '#0d0b16'), st === 'ok' ? 'var(--ok)' : st === 'run' ? 'var(--cyan)' : st === 'off' ? 'rgba(165,159,191,.35)' : 'var(--warn)', r.name || r.host, sub, t);
 	}).join('');
-	const body = `<div class="ph-card list"><div class="ph-h">STATUS</div>${list}</div>
-		<div class="ph-card pad"><div class="ph-hint">Normales OpenWrt erlaubt dem Benutzer root über die Schnittstelle der App nicht alles. Ohne diese Rechte fehlen z. B. die WLAN-Liste, „Kabelgerät online“ und die Temperatur. Der Block legt die Datei <span class="mono">root.json</span> an und trägt sie in <span class="mono">/etc/sysupgrade.conf</span> ein, damit sie ein Firmware-Update übersteht. Installiert wird nichts.</div>
+	const btn = run ? `<button class="ph-btn primary" disabled><div class="ph-spin"></div>&nbsp; Wird eingerichtet …</button>`
+		: noPkg.length ? `<button class="ph-btn primary" data-a="rightsInstall">${icon('plus', 18)}&nbsp; ${missing.length ? 'Rechte einrichten' : 'Paket installieren'} (${noPkg.length} Router)</button>`
+		: `<button class="ph-btn" disabled>${icon('check', 18)}&nbsp; Auf allen Routern installiert</button>`;
+	let body = '<div class="ph-h" style="padding:0 4px">ROUTER-RECHTE · ALLE ROUTER</div>';
+	body += missing.length
+		? `<div class="ph-banner warn"><div class="ph-line"><span style="flex:none;display:flex">${icon('lock', 22, 'var(--warn)')}</span><div><b>${missing.length} Router ohne volle Rechte</b><small>Ohne diese Rechte fehlen die WLAN-Liste, „Kabelgerät online“ und die Temperatur. Die App installiert dafür das kleine Paket „phantom-rights“ – ohne SSH.</small></div></div>${btn}</div>`
+		: `<div class="ph-banner ok"><div class="ph-line"><span style="flex:none;display:flex">${icon('check', 22, 'var(--ok)')}</span><div><b>Alle Router haben die Rechte</b><small>${noPkg.length ? 'Die Rechte sind schon da (per SSH oder Firmware). Das Paket brauchst du nicht – damit tauchen die Rechte nur zusätzlich in der Weboberfläche unter System → Software auf.' : 'Das Paket bleibt auch nach einem Firmware-Update mit „Einstellungen behalten“. Entfernen geht in der Weboberfläche unter System → Software.'}</small></div></div>${btn}</div>`;
+	body += `<div class="ph-card list"><div class="ph-h">STATUS</div>${list}</div>
+		<details class="ph-card pad" style="display:block"><summary class="ph-h" style="min-height:32px">Ohne Paketverwaltung? SSH-Block</summary>
+		<div style="display:flex;flex-direction:column;gap:10px;margin-top:8px"><div class="ph-hint">Nur nötig, wenn der Router keine Pakete installieren kann (sehr kleine eigene Firmware). Der Block legt die Datei <span class="mono">root.json</span> an und trägt sie in <span class="mono">/etc/sysupgrade.conf</span> ein, damit sie ein Firmware-Update übersteht.</div>
 		<div class="ph-hint">1. Per SSH auf den Router (z. B. <span class="mono">ssh root@${esc(Net.master ? Net.master.host : '')}</span>)<br>2. Block kopieren, einfügen, Enter<br>3. Auf jedem Router wiederholen, dann hier neu prüfen</div>
-		<div class="ph-grid2"><button class="ph-btn primary" data-a="copyHelper">${icon('log', 18)}&nbsp; Kopieren</button><button class="ph-btn cyan" data-a="shareHelper">${icon('share', 18)}&nbsp; Teilen</button></div></div>
-		<details class="ph-card pad"><summary class="ph-h" style="min-height:32px">SSH-Block ansehen</summary><div class="ph-console" style="max-height:340px">${esc(window.PHANTOM_HELPER || '')}</div></details>
+		<div class="ph-grid2"><button class="ph-btn primary" data-a="copyHelper">${icon('log', 18)}&nbsp; Kopieren</button><button class="ph-btn cyan" data-a="shareHelper">${icon('share', 18)}&nbsp; Teilen</button></div>
+		<div class="ph-console" style="max-height:340px">${esc(window.PHANTOM_HELPER || '')}</div></div></details>`;
+	// Tageslimit-Zähler (nur Master)
+	const has = Net.caps().helper, old = has && Net.agentOld();
+	const aSub = !has ? 'nicht installiert' : 'Version ' + (Net.agentVer() || '?') + (old ? ' · neu: ' + Net.AGENT_VER : ' · ' + (Net.master ? Net.master.name : 'Master'));
+	const aTag = !has ? tag('off', 'aus') : old ? tag('warn', 'Update') : tag('ok', 'aktuell');
+	body += `<div class="ph-h" style="padding:6px 4px 0">TAGESLIMIT-ZÄHLER · NUR MASTER</div>
+		<div class="ph-card pad">${row(icon('clock', 20, '#0d0b16'), 'var(--violet)', 'phantom-agent', aSub, aTag)}
+		<div class="ph-hint">Zählt Nutzungszeit und Daten je Gerät, setzt Tageslimits durch und trennt laufende Verbindungen, sobald ein Gerät pausiert wird.</div>
+		${!has ? `<button class="ph-btn primary" data-a="agentInstall">${spinOr('agent', icon('plus', 18) + '&nbsp; Einrichten')}</button>`
+		: `<div class="ph-grid2">${old ? `<button class="ph-btn primary" data-a="agentInstall">${spinOr('agent', icon('refresh', 18) + '&nbsp; Aktualisieren')}</button>` : `<button class="ph-btn" disabled>${icon('check', 18)}&nbsp; Aktuell</button>`}<button class="ph-btn danger" data-a="agentRemove">${spinOr('agent', 'Entfernen')}</button></div>`}</div>
 		<button class="ph-btn" data-a="refresh">${icon('refresh', 18)}&nbsp; Neu prüfen</button>`;
-	return { title: 'Router-Rechte', body };
+	return { title: 'Router-Pakete', body };
 };
 
 VIEWS.about = () => {
@@ -1762,6 +1786,18 @@ A.reboot = (x) => {
 		<button class="ph-btn danger" data-a="rebootYes" data-x="${x}">Neu starten</button><button class="ph-btn" data-a="sheetClose">Abbrechen</button>`);
 };
 A.agentInstall = () => act('agent', () => Net.agentInstall(), 'Tageslimit ist eingerichtet');
+/* Rechte-Paket auf jedem erreichbaren Router ohne Paket, nacheinander */
+A.rightsInstall = () => act('rights', async () => {
+	const todo = Net.routers.filter((r) => { const i = Net.info[r.id]; return i && i.ok && !i.rightsPkg; });
+	const bad = [];
+	for (const r of todo) {
+		S.rightsAt = r.id; renderSoft();
+		try { await Net.rightsInstall(r); } catch (e) { bad.push((r.name || r.host) + ': ' + (e.message || e)); }
+	}
+	S.rightsAt = null;
+	if (bad.length) throw new Error('Nicht eingerichtet – ' + bad.join(' · '));
+	return todo.length;
+}, (n) => n === 1 ? 'Rechte auf 1 Router eingerichtet' : 'Rechte auf ' + n + ' Routern eingerichtet');
 A.agentRemove = () => openSheet(`<h2>Tageslimit-Zähler entfernen?</h2><div class="ph-hint">Tageslimits zählen dann nicht mehr, aktive Limit-Sperren werden aufgehoben. Profile, Pausen und Zeitpläne bleiben.</div>
 	<button class="ph-btn danger" data-a="agentRemoveYes">Entfernen</button><button class="ph-btn" data-a="sheetClose">Abbrechen</button>`);
 A.agentRemoveYes = () => { closeSheet(); act('agent', () => Net.agentRemove(), 'Tageslimit-Zähler entfernt'); };

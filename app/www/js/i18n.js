@@ -303,7 +303,21 @@ const EN = {
 	'Speichern & einschalten': "Save & turn on", 'Nach Router suchen': "Search for routers", 'unbekannt': "unknown", 'von': "of", 'aktiv': "active",
 	'APP-GERÜST': "APP FRAMEWORK", 'IN DER APP': "IN THE APP", 'AUF DEM ROUTER': "ON THE ROUTER", 'ANDROID': "ANDROID", '(Schrift)': "(font)",
 	'Neuer Tag: Tageslimits zurückgesetzt': "New day: daily limits reset", 'automatisch ausgeschaltet': "turned off automatically",
-	'WLAN-Nachtschaltung:': "Wi‑Fi night mode:", 'wieder an': "back on", 'Pause beendet:': "Pause ended:", 'gestartet': "started"
+	'WLAN-Nachtschaltung:': "Wi‑Fi night mode:", 'wieder an': "back on", 'Pause beendet:': "Pause ended:", 'gestartet': "started",
+	'Die Rechte sind schon da (per SSH oder Firmware). Das Paket brauchst du nicht – damit tauchen die Rechte nur zusätzlich in der Weboberfläche unter System → Software auf.': "The permissions are already there (via SSH or firmware). You don't need the package – it only makes them show up in the web interface under System → Software as well.",
+	'WLAN-Liste': "Wi‑Fi list", 'ARP-Tabelle': "ARP table", 'Router-Pakete': "Router packages", 'ROUTER-RECHTE · ALLE ROUTER': "ROUTER PERMISSIONS · ALL ROUTERS", 'TAGESLIMIT-ZÄHLER · NUR MASTER': "DAILY LIMIT COUNTER · MASTER ONLY",
+	'Rechte einrichten': "Set up permissions", 'Paket installieren': "Install package", 'Wird eingerichtet …': "Setting up …", 'Auf allen Routern installiert': "Installed on all routers",
+	'Paket wird installiert …': "Installing package …", 'läuft': "running", 'offline': "offline", 'Rechte vollständig': "Permissions complete", '· Paket': "· package", '· per SSH': "· via SSH", '· Firmware': "· firmware",
+	'Router ohne volle Rechte': "router(s) without full permissions",
+	'Ohne diese Rechte fehlen die WLAN-Liste, „Kabelgerät online“ und die Temperatur. Die App installiert dafür das kleine Paket „phantom-rights“ – ohne SSH.': "Without these permissions the Wi‑Fi list, “cable device online” and the temperature are missing. The app installs the small “phantom-rights” package for this – no SSH needed.",
+	'Alle Router haben die Rechte': "All routers have the permissions", 'Das Paket bleibt auch nach einem Firmware-Update mit „Einstellungen behalten“. Entfernen geht in der Weboberfläche unter System → Software.': "The package survives a firmware update with “Keep settings”. You can remove it in the web interface under System → Software.",
+	'Ohne Paketverwaltung? SSH-Block': "No package manager? SSH block",
+	'Nur nötig, wenn der Router keine Pakete installieren kann (sehr kleine eigene Firmware). Der Block legt die Datei': "Only needed if the router can't install packages (very small custom firmware). The block creates the file",
+	'ein, damit sie ein Firmware-Update übersteht.': "so it survives a firmware update.",
+	'nicht installiert': "not installed", 'neu:': "new:", 'Update': "Update", 'Aktualisieren': "Update", 'Aktuell': "Up to date",
+	'Zählt Nutzungszeit und Daten je Gerät, setzt Tageslimits durch und trennt laufende Verbindungen, sobald ein Gerät pausiert wird.': "Counts usage time and data per device, enforces daily limits and cuts running connections as soon as a device is paused.",
+	'Rechte fehlen auf': "Permissions missing on", '· Tageslimit-Zähler': "· daily limit counter", 'Nicht eingerichtet –': "Not set up –",
+	'Rechte auf 1 Router eingerichtet': "Permissions set up on 1 router"
 };
 
 /* Kurze Wörter, die nur als ganzer Text übersetzt werden (sonst würde z. B. aus „20:30 Uhr“ „20:30 Watch“) */
@@ -311,6 +325,10 @@ const EN_EXACT = new Set([ 'ROUTER', 'von', 'aktiv', 'Uhr', 'Art', 'Band', 'Stan
 
 /* Texte mit Zahlen: [Muster, Ersatz] – greifen vor den Textstücken */
 const EN_RX = [
+	[ /^(\d+) Router ohne volle Rechte$/, (m, n) => n + (n === '1' ? ' router' : ' routers') + ' without full permissions' ],
+	[ /^(Rechte einrichten|Paket installieren) \((\d+) Router\)$/, (m, a, n) => (a === 'Paket installieren' ? 'Install package' : 'Set up permissions') + ' (' + n + (n === '1' ? ' router)' : ' routers)') ],
+	[ /^Rechte auf (\d+) Routern eingerichtet$/, 'Permissions set up on $1 routers' ],
+	[ /^Rechte fehlen auf (\d+) Router$/, (m, n) => 'Permissions missing on ' + n + (n === '1' ? ' router' : ' routers') ],
 	[ /^Seit (.+)$/, 'Since $1' ],
 	[ /^„(.+)“ ausschalten\?$/, 'Turn off “$1”?' ],
 	[ /^(.+) neu starten\?$/, 'Restart $1?' ],

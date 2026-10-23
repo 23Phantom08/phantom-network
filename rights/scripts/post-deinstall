@@ -1,0 +1,5 @@
+#!/bin/sh
+[ -n "${IPKG_INSTROOT}" ] && exit 0
+sed -i '\#^/usr/share/rpcd/acl.d/phantom-rights.json$#d' /etc/sysupgrade.conf 2>/dev/null
+( sleep 3; /etc/init.d/rpcd reload ) </dev/null >/dev/null 2>&1 200>&- &
+exit 0

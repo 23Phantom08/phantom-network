@@ -1,0 +1,9 @@
+#!/bin/sh
+[ "${IPKG_NO_SCRIPT}" = "1" ] && exit 0
+[ -n "${IPKG_INSTROOT}" ] && exit 0
+# keep the permissions across firmware updates ("keep settings")
+F=/usr/share/rpcd/acl.d/phantom-rights.json
+grep -qx "$F" /etc/sysupgrade.conf 2>/dev/null || echo "$F" >> /etc/sysupgrade.conf
+# activate the permissions – shortly after the installation, not in the middle of it
+( sleep 3; /etc/init.d/rpcd reload ) </dev/null >/dev/null 2>&1 200>&- &
+exit 0

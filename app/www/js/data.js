@@ -149,13 +149,15 @@ const Net = {
 		const inf = { ok: false, wifi: [], board: {}, sys: {}, temp: null };
 		try {
 			const has = (path) => r.call('file', 'stat', { path }).then(() => true, () => false);
-			const [ board, sys, devs, temp, helper, wol, ct, nlbw ] = await Promise.all([
+			const [ board, sys, devs, temp, helper, wol, ct, nlbw, rPkg, rSsh ] = await Promise.all([
 				r.call('system', 'board', {}),
 				r.call('system', 'info', {}),
 				r.call('iwinfo', 'devices', {}).then((x) => Object.assign(x, { aclOk: true })).catch(() => ({ devices: [] })),
 				r.read('/sys/class/thermal/thermal_zone0/temp'),
-				has('/usr/share/phantom/agent.uc'), has('/usr/bin/etherwake'), has('/usr/sbin/conntrack'), has('/usr/sbin/nlbw')
+				has('/usr/share/phantom/agent.uc'), has('/usr/bin/etherwake'), has('/usr/sbin/conntrack'), has('/usr/sbin/nlbw'),
+				has('/usr/share/rpcd/acl.d/phantom-rights.json'), has('/usr/share/rpcd/acl.d/root.json')
 			]);
+			inf.rightsPkg = rPkg; inf.rightsSsh = rSsh;
 			inf.board = board; inf.sys = sys; inf.ok = true;
 			// Netzwerke (Schnittstellen) und Anschlüsse (Ports)
 			const [ ifd, devst ] = await Promise.all([
@@ -834,9 +836,9 @@ const Net = {
 		for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
 		return btoa(s);
 	},
-	async agentPm(args) {
+	async agentPm(args, router) {
 		let r;
-		try { r = await this.master.exec('/usr/libexec/package-manager-call', args, 90000); } catch (e) {
+		try { r = await (router || this.master).exec('/usr/libexec/package-manager-call', args, 90000); } catch (e) {
 			if (e.ubus === 6 || e.ubus === 4) throw new Error('Der Router erlaubt keine Paket-Installation (in der Weboberfläche fehlt „Software“)');
 			throw e;
 		}
@@ -846,14 +848,18 @@ const Net = {
 		return o;
 	},
 	async agentInstall() {
-		const m = this.master;
-		if (!m) throw new Error('Kein Master eingerichtet');
-		const [ apk, key ] = await Promise.all([ this.agentFile('agent/phantom-agent.apk', true), this.agentFile('agent/phantom-agent.pem') ]);
+		if (!this.master) throw new Error('Kein Master eingerichtet');
+		await this.pkgInstall(this.master, 'agent/phantom-agent.apk');
+	},
+	/* Router-Rechte als Paket „phantom-rights“ (nur die Rechte-Datei für rpcd) – ersetzt den SSH-Block */
+	async rightsInstall(r) { await this.pkgInstall(r, 'agent/phantom-rights.apk'); },
+	async pkgInstall(m, file) {
+		const [ apk, key ] = await Promise.all([ this.agentFile(file, true), this.agentFile('agent/phantom-agent.pem') ]);
 		const KEY = '/etc/apk/keys/phantom-agent.pem', PKG = '/tmp/upload.apk';
 		try {
 			await m.call('file', 'write', { path: KEY, data: key });
 			await m.call('file', 'write', { path: PKG, data: apk, base64: true });
-			await this.agentPm([ 'install', PKG ]);
+			await this.agentPm([ 'install', PKG ], m);
 		} catch (e) {
 			if (e.ubus === 6) throw new Error('Der Router erlaubt keine Paket-Installation (in der Weboberfläche fehlt „Software“)');
 			throw e;
