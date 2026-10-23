@@ -1406,7 +1406,8 @@ VIEWS.helper = () => {
 		return row(icon('router', 20, '#0d0b16'), st === 'ok' ? 'var(--ok)' : st === 'run' ? 'var(--cyan)' : st === 'off' ? 'rgba(165,159,191,.35)' : 'var(--warn)', r.name || r.host, sub, t);
 	}).join('');
 	const btn = run ? `<button class="ph-btn primary" disabled><div class="ph-spin"></div>&nbsp; Wird eingerichtet …</button>`
-		: noPkg.length ? `<button class="ph-btn primary" data-a="rightsInstall">${icon('plus', 18)}&nbsp; ${missing.length ? 'Rechte einrichten' : 'Paket installieren'} (${noPkg.length} Router)</button>`
+		: missing.length ? `<button class="ph-btn primary" data-a="rightsInstall">${icon('plus', 18)}&nbsp; Rechte einrichten (${missing.length} Router)</button>`
+		: noPkg.length ? `<button class="ph-btn primary" data-a="rightsInstall">${icon('plus', 18)}&nbsp; Paket installieren (${noPkg.length} Router)</button>`
 		: `<button class="ph-btn" disabled>${icon('check', 18)}&nbsp; Auf allen Routern installiert</button>`;
 	let body = '<div class="ph-h" style="padding:0 4px">ROUTER-RECHTE · ALLE ROUTER</div>';
 	body += missing.length
@@ -1788,7 +1789,10 @@ A.reboot = (x) => {
 A.agentInstall = () => act('agent', () => Net.agentInstall(), 'Tageslimit ist eingerichtet');
 /* Rechte-Paket auf jedem erreichbaren Router ohne Paket, nacheinander */
 A.rightsInstall = () => act('rights', async () => {
-	const todo = Net.routers.filter((r) => { const i = Net.info[r.id]; return i && i.ok && !i.rightsPkg; });
+	// fehlen irgendwo Rechte: nur dort; sonst auf allen Routern, die das Paket noch nicht haben
+	const ok = Net.routers.filter((r) => { const i = Net.info[r.id]; return i && i.ok; });
+	const miss = ok.filter((r) => !Net.info[r.id].acl);
+	const todo = miss.length ? miss : ok.filter((r) => !Net.info[r.id].rightsPkg);
 	const bad = [];
 	for (const r of todo) {
 		S.rightsAt = r.id; renderSoft();
