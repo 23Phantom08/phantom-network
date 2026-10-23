@@ -198,7 +198,7 @@ const EN = {
 	// Router & Anmeldungen, Verbindung
 	'Angemeldet': "Signed in", 'OpenWrt': "OpenWrt", 'Alle Router auf HTTPS umstellen': "Switch all routers to HTTPS", 'HTTP erlauben': "Allow HTTP",
 	'Nur für Router ohne HTTPS (ältere OpenWrt-Versionen)': "Only for routers without HTTPS (older OpenWrt versions)",
-	'„Nach Router suchen“ prüft die Geräte im Netz des Masters. Firmware-Updates werden wie in der Home-Assistant-Integration geprüft: neueste Version im selben Zweig, alle 12 Stunden.': "“Search for routers” checks the devices in the master's network. Firmware updates are checked like in the Home Assistant integration: latest version in the same branch, every 12 hours.",
+	'„Nach Router suchen“ prüft die Geräte im Netz des Masters. Firmware-Updates werden alle 12 Stunden geprüft: neueste Version im selben OpenWrt-Zweig.': "“Search for routers” checks the devices in the master's network. Firmware updates are checked every 12 hours: latest version in the same OpenWrt branch.",
 	'Passwörter liegen nur im Android-Schlüsselspeicher.': "Passwords are kept only in the Android keystore.", 'Router noch ohne Verschlüsselung': "routers still unencrypted",
 	'Mit einem Tipp auf HTTPS umstellen. Beim ersten Kontakt merkt sich die App das Zertifikat selbst.': "Switch to HTTPS with one tap. The app remembers the certificate on first contact.",
 	'Alle Router verschlüsselt': "All routers encrypted", 'Ändert sich ein Zertifikat, fragt die App nach.': "If a certificate changes, the app asks.",

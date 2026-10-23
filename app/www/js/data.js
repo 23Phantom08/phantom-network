@@ -26,7 +26,7 @@ function inSubnet(ip, net, bits) { const a = ipNum(ip), b = ipNum(net); if (a ==
 function netAddr(ip, bits) { const n = (ipNum(ip) & maskNum(bits)) >>> 0; return [ n >>> 24, (n >>> 16) & 255, (n >>> 8) & 255, n & 255 ].join('.') + '/' + bits; }
 function netKeyOf(name) { const n = String(name || '').toLowerCase(); return n === 'lan' ? 'lan' : /gast|guest/.test(n) ? 'gast' : /smart|iot|(^|[_-])sh([_-]|$)/.test(n) ? 'sh' : n; }
 
-/* Firmware-Updates wie in der Home-Assistant-Integration: neueste Version im SELBEN Zweig (25.12.x),
+/* Firmware-Updates: neueste Version im SELBEN Zweig (25.12.x),
    keine Sprünge auf einen neuen Hauptzweig, keine Release-Candidates */
 function fwParse(v) { const m = /^(\d+)\.(\d+)\.(\d+)$/.exec(String(v || '')); return m ? m.slice(1).map(Number) : null; }
 function fwLatest(installed, list) {
@@ -157,7 +157,7 @@ const Net = {
 				has('/usr/share/phantom/agent.uc'), has('/usr/bin/etherwake'), has('/usr/sbin/conntrack'), has('/usr/sbin/nlbw')
 			]);
 			inf.board = board; inf.sys = sys; inf.ok = true;
-			// Netzwerke (Schnittstellen) und Anschlüsse (Ports) – wie in der Home-Assistant-Integration
+			// Netzwerke (Schnittstellen) und Anschlüsse (Ports)
 			const [ ifd, devst ] = await Promise.all([
 				r === this.master && this.ifaces.length ? { interface: this.ifaces } : r.call('network.interface', 'dump', {}).catch(() => ({ interface: [] })),
 				r.call('network.device', 'status', {}).catch(() => ({}))
@@ -318,7 +318,7 @@ const Net = {
 		for (const [ m, s ] of Object.entries(statics)) { const d = add(m); d.name = s.name || d.name; d.ip = s.ip || d.ip; d.fixed = true; d.fixedSec = s.sec; }
 		for (const l of this.leases || []) {
 			const d = add(macUp(l.macaddr)); d.ip = l.ipaddr || d.ip; if (!d.name && l.hostname) d.name = l.hostname; d.lease = true;
-			// Ohne Lesezugriff auf die ARP-Tabelle: aktiver DHCP-Lease = online (wie die Home-Assistant-Integration)
+			// Ohne Lesezugriff auf die ARP-Tabelle: aktiver DHCP-Lease = online
 			if (!this.arpOk) d.leaseOnly = true;
 		}
 		// ARP: nur Geräte in den eigenen Netzen (nicht der Router davor auf der Internet-Seite)

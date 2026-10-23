@@ -76,7 +76,7 @@ class Router {
 	async uciSet(config, section, values) { return this.call('uci', 'set', { config, section, values }); }
 	async uciAdd(config, type, name, values) { return this.call('uci', 'add', { config, type, name, values }); }
 	async uciDel(config, section, options) { return this.call('uci', 'delete', options ? { config, section, options } : { config, section }); }
-	/* Speichern und den Dienst gezielt neu laden – genau wie die Home-Assistant-Integration
+	/* Speichern und den Dienst gezielt neu laden
 	   (verlässt sich nicht nur auf das automatische Neuladen nach dem Speichern) */
 	async uciCommit(config) {
 		const r = await this.call('uci', 'commit', { config });

@@ -695,7 +695,7 @@ VIEWS.fam = () => {
 	return { title: 'Familie', sub: ps.length + ' Profile', body };
 };
 
-/* Firmware-Status wie in der Home-Assistant-Integration: aktuell / Update verfügbar */
+/* Firmware-Status: aktuell / Update verfügbar */
 function fwState(r) {
 	if (!Net.fwList || !Net.fwList.v.length || !fwParse(Net.fwInstalled(r))) return null;
 	const up = Net.fwUpdate(r);
@@ -1257,7 +1257,7 @@ VIEWS.cudys = () => {
 	}).join('') + '</div>';
 	body += `<button class="ph-btn cyan" data-a="rescan">${spinOr('rescan', icon('search', 18) + '&nbsp; Nach Router suchen')}</button>
 		<button class="ph-btn dashed" data-a="addCudy">${icon('plus', 18)}&nbsp; Router von Hand hinzufügen</button>
-		<div class="ph-dim">„Nach Router suchen“ prüft die Geräte im Netz des Masters. Firmware-Updates werden wie in der Home-Assistant-Integration geprüft: neueste Version im selben Zweig, alle 12 Stunden.<br>Passwörter liegen nur im Android-Schlüsselspeicher.</div>`;
+		<div class="ph-dim">„Nach Router suchen“ prüft die Geräte im Netz des Masters. Firmware-Updates werden alle 12 Stunden geprüft: neueste Version im selben OpenWrt-Zweig.<br>Passwörter liegen nur im Android-Schlüsselspeicher.</div>`;
 	return { title: 'Router & Anmeldungen', body };
 };
 
