@@ -9,5 +9,3 @@ update with "keep settings". Nothing else is installed or changed.
 
 The app installs it on all routers with one tap (More → Router packages) and it can be removed again in LuCI
 under System → Software. It can coexist with a `root.json` that was added by hand via SSH.
-
-Build: `./build.sh path/to/apk ../app/www` – see [`../agent/README.md`](../agent/README.md) for the `apk` tool.

@@ -5,7 +5,7 @@ It needs no extra packages – only what OpenWrt 25.12 already ships
 (ucode, uci, fw4 and the kernel's connection tracking).
 
 The app installs the package by itself (Family → profile → set up daily limit,
-or the master's router page). This folder only holds the source for rebuilding it.
+or the master's router page). This folder holds its source.
 
 ## What it does
 
@@ -23,23 +23,6 @@ or the master's router page). This folder only holds the source for rebuilding i
 | `files/usr/share/rpcd/acl.d/phantom-agent.json` | read permissions for the app |
 | `scripts/*` | install / upgrade / remove hooks |
 | `build.sh` | builds and signs `out/phantom-agent.apk` |
-| `keys/` | signing key pair (not in the repository – created on the first build) |
-
-## Rebuilding (only needed when the agent changes)
-
-With the `apk` tool from the OpenWrt Image Builder (it includes `mkpkg`):
-
-```sh
-docker run --rm -v "$PWD/agent:/agent" -v "$PWD/app/www:/www" openwrt/imagebuilder:mediatek-filogic-v25.12.6 \
-  sh -c './setup.sh >/dev/null && /agent/build.sh "$PWD/staging_dir/host/bin/apk" /www'
-```
-
-Bump `VERSION` in `agent.uc` and `AGENT_VER` in `app/www/js/data.js` first –
-the app only offers the update when the version changes. With the second path,
-`build.sh` copies the package and the public key to `app/www/agent/`.
-
-If you build with your own key, the app installs your public key on the router together with the package,
-so a self-built app and agent always match. Keep `keys/phantom-agent.key` private.
 
 ## Settings (optional)
 
