@@ -1,0 +1,30 @@
+# Signing keys – never commit
+keys/
+*.jks
+*.keystore
+*.key
+passwort.txt
+password.txt
+agent/keys/
+
+# Build output
+out/
+agent/out/
+*.apk
+!app/www/agent/phantom-agent.apk
+
+# Dependencies and generated files
+node_modules/
+app/android/app/src/main/assets/public/
+app/android/app/src/main/assets/capacitor.config.json
+app/android/app/src/main/assets/capacitor.plugins.json
+app/android/local.properties
+.gradle/
+build/
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+@eaDir/

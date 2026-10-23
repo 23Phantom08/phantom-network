@@ -1,0 +1,27 @@
+{
+  "appId": "de.phantomnetwork.app",
+  "appName": "Phantom Network",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": true,
+    "backgroundColor": "#0d0b16"
+  },
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": false
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_phantom",
+      "iconColor": "#a855f7"
+    },
+    "SystemBars": {
+      "style": "DARK",
+      "insetsHandling": "css"
+    }
+  },
+  "backgroundColor": "#0d0b16"
+}

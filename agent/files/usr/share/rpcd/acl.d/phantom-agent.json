@@ -1,0 +1,16 @@
+{
+	"phantom-agent": {
+		"description": "Phantom-Agent: Nutzungszeit und Tageslimit lesen",
+		"read": {
+			"file": {
+				"/tmp/phantom/today.json": [ "read" ],
+				"/etc/phantom/usage.json": [ "read" ],
+				"/etc/phantom/events.log": [ "read" ]
+			},
+			"uci": [ "phantom" ]
+		},
+		"write": {
+			"uci": [ "phantom" ]
+		}
+	}
+}

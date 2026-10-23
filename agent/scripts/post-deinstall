@@ -1,0 +1,4 @@
+#!/bin/sh
+[ -n "${IPKG_INSTROOT}" ] && exit 0
+( sleep 3; /etc/init.d/rpcd reload ) </dev/null >/dev/null 2>&1 200>&- &
+exit 0

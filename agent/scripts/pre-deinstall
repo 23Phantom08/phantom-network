@@ -1,0 +1,17 @@
+#!/bin/sh
+[ -s "${IPKG_INSTROOT}/lib/functions.sh" ] || exit 0
+. ${IPKG_INSTROOT}/lib/functions.sh
+export root="${IPKG_INSTROOT}"
+export pkgname="phantom-agent"
+default_prerm
+[ -n "${root}" ] && exit 0
+# lift active daily-limit blocks, otherwise devices stay blocked until the next change
+changed=0
+for s in $(uci -q show firewall | sed -n 's/^firewall\.\(phantom_limit_[^.=]*\)=rule$/\1/p'); do
+	[ "$(uci -q get firewall.$s.enabled)" = "0" ] && continue
+	uci -q set firewall.$s.enabled=0 && changed=1
+done
+[ "$changed" = "1" ] && uci -q commit firewall && /etc/init.d/firewall reload >/dev/null 2>&1
+rm -rf /tmp/phantom
+rm -f /etc/phantom/agent-state.json
+exit 0

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Benachrichtigungs-Symbol: Geist (einfarbig) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#FFFFFFFF"
+        android:pathData="M12,2C7.6,2 4,5.6 4,10v11.2c0,0.6 0.7,0.9 1.1,0.5L7,20l1.9,1.7c0.3,0.3 0.8,0.3 1.1,0L12,20l2,1.7c0.3,0.3 0.8,0.3 1.1,0L17,20l1.9,1.7c0.4,0.4 1.1,0.1 1.1,-0.5V10C20,5.6 16.4,2 12,2zM9,12.5c-0.8,0 -1.5,-0.9 -1.5,-2s0.7,-2 1.5,-2s1.5,0.9 1.5,2S9.8,12.5 9,12.5zM15,12.5c-0.8,0 -1.5,-0.9 -1.5,-2s0.7,-2 1.5,-2s1.5,0.9 1.5,2S15.8,12.5 15,12.5z"/>
+</vector>

@@ -1,0 +1,15 @@
+services:
+  phantom-app:
+    image: eclipse-temurin:21-jdk-jammy
+    container_name: phantom-app-build
+    working_dir: /work
+    volumes:
+      - ./:/work
+      - phantom-cache:/cache
+    environment:
+      - APP_VERSION=1.0
+    command: ["bash", "/work/build.sh"]
+    restart: "no"
+
+volumes:
+  phantom-cache:
