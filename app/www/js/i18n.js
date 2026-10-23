@@ -305,7 +305,7 @@ const EN = {
 	'Neuer Tag: Tageslimits zurückgesetzt': "New day: daily limits reset", 'automatisch ausgeschaltet': "turned off automatically",
 	'WLAN-Nachtschaltung:': "Wi‑Fi night mode:", 'wieder an': "back on", 'Pause beendet:': "Pause ended:", 'gestartet': "started",
 	'Die Rechte sind schon da (per SSH oder Firmware). Das Paket brauchst du nicht – damit tauchen die Rechte nur zusätzlich in der Weboberfläche unter System → Software auf.': "The permissions are already there (via SSH or firmware). You don't need the package – it only makes them show up in the web interface under System → Software as well.",
-	'WLAN-Liste': "Wi‑Fi list", 'ARP-Tabelle': "ARP table", 'Router-Pakete': "Router packages", 'ROUTER-RECHTE · ALLE ROUTER': "ROUTER PERMISSIONS · ALL ROUTERS", 'TAGESLIMIT-ZÄHLER · NUR MASTER': "DAILY LIMIT COUNTER · MASTER ONLY",
+	'· Kabel': "· Cable", 'WLAN-Liste': "Wi‑Fi list", 'ARP-Tabelle': "ARP table", 'Router-Pakete': "Router packages", 'ROUTER-RECHTE · ALLE ROUTER': "ROUTER PERMISSIONS · ALL ROUTERS", 'TAGESLIMIT-ZÄHLER · NUR MASTER': "DAILY LIMIT COUNTER · MASTER ONLY",
 	'Rechte einrichten': "Set up permissions", 'Paket installieren': "Install package", 'Wird eingerichtet …': "Setting up …", 'Auf allen Routern installiert': "Installed on all routers",
 	'Paket wird installiert …': "Installing package …", 'läuft': "running", 'offline': "offline", 'Rechte vollständig': "Permissions complete", '· Paket': "· package", '· per SSH': "· via SSH", '· Firmware': "· firmware",
 	'Router ohne volle Rechte': "router(s) without full permissions",
@@ -325,6 +325,7 @@ const EN_EXACT = new Set([ 'ROUTER', 'von', 'aktiv', 'Uhr', 'Art', 'Band', 'Stan
 
 /* Texte mit Zahlen: [Muster, Ersatz] – greifen vor den Textstücken */
 const EN_RX = [
+	[ /^(Alle )?(\d+) Router funken auf Kanal (\d+)$/, (m, all, n, c) => (all ? 'All ' + n + ' routers' : n + (n === '1' ? ' router' : ' routers')) + ' on channel ' + c ],
 	[ /^(\d+) Router ohne volle Rechte$/, (m, n) => n + (n === '1' ? ' router' : ' routers') + ' without full permissions' ],
 	[ /^(Rechte einrichten|Paket installieren) \((\d+) Router\)$/, (m, a, n) => (a === 'Paket installieren' ? 'Install package' : 'Set up permissions') + ' (' + n + (n === '1' ? ' router)' : ' routers)') ],
 	[ /^Rechte auf (\d+) Routern eingerichtet$/, 'Permissions set up on $1 routers' ],
@@ -396,7 +397,14 @@ const I18N = {
 		const nodes = [];
 		while (w.nextNode()) nodes.push(w.currentNode);
 		for (const n of nodes) {
-			if (!/[A-Za-zÄÖÜäöüß]/.test(n.nodeValue) || skip(n.parentElement)) continue;
+			if (!/[A-Za-zÄÖÜäöüß]/.test(n.nodeValue)) continue;
+			// Zahlen mit Einheit in .mono (z. B. „1 Std 15 Min“, „4,8 GB“) – nur die Einheiten, keine Adressen oder Code
+			if (n.parentElement && n.parentElement.closest('.mono') && !n.parentElement.closest('pre, code, textarea, .ph-console')) {
+				const v = n.nodeValue.replace(/(\d+) Std\b/g, '$1 h').replace(/(\d+) Min\b/g, '$1 min').replace(/(\d),(\d)/g, '$1.$2');
+				if (v !== n.nodeValue) n.nodeValue = v;
+				continue;
+			}
+			if (skip(n.parentElement)) continue;
 			const v = this.t(n.nodeValue);
 			if (v !== n.nodeValue) n.nodeValue = v;
 		}

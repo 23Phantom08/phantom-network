@@ -6,6 +6,18 @@ The app talks directly to your routers through the same interface the OpenWrt we
 
 > Built and tested on Cudy routers (WR3000E / WR3000P) running OpenWrt 25.12 – one router as master, the others as mesh access points. Other OpenWrt routers should work as long as they run OpenWrt 25.12 with LuCI.
 
+<p align="center">
+  <img src="docs/screenshots/overview.png" width="200" alt="Overview">
+  <img src="docs/screenshots/devices.png" width="200" alt="Devices">
+  <img src="docs/screenshots/family.png" width="200" alt="Family profile with daily limit">
+  <img src="docs/screenshots/network.png" width="200" alt="Network">
+</p>
+<p align="center">
+  <img src="docs/screenshots/wifi-channels.png" width="200" alt="Wi-Fi channels">
+  <img src="docs/screenshots/firewall.png" width="200" alt="Firewall">
+  <img src="docs/screenshots/router-packages.png" width="200" alt="Router packages">
+</p>
+
 ## Features
 
 - **Overview** – internet status, devices online, today's data usage, recent events
@@ -43,6 +55,7 @@ Profiles, pauses, schedules and limits are stored as normal firewall rules in th
 ## Project layout
 
 ```
+docs/screenshots/   screenshots for this README (demo data)
 app/                Capacitor project
   www/              the app itself (index.html, js/, css/, fonts, agent package)
   android/          Android project incl. native plugin (de.phantomnetwork.app)
