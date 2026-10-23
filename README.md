@@ -13,7 +13,7 @@ The app talks directly to your routers through the same interface the OpenWrt we
 - **Family** – group devices into profiles; pause a whole profile, bedtime/homework schedules, daily time limit with weekend limit and one‑tap bonus time
 - **Network** – mesh map, Wi‑Fi networks on all routers, guest Wi‑Fi with QR code and timer, night mode, speed test, ping/traceroute, Wi‑Fi channel scan and automatic channel planning
 - **Firewall** – read‑only view of port forwards, rules and zones
-- **Routers** – system info, ports, firmware update check (same branch, like the Home Assistant OpenWrt integration), backups to a folder of your choice, restart
+- **Routers** – system info, ports, firmware update check (newer release in the same OpenWrt branch), backups to a folder of your choice, restart
 - **VPN** – WireGuard server on the master: create phone access with QR code, switch the tunnel on this phone
 - **Notifications** – background check about every 15 minutes: new devices, errors, routers offline, firmware updates, daily limit reached (with “+30 min” action)
 - **Security** – HTTPS by default with certificate pinning on first use, optional app login with password and fingerprint
@@ -30,8 +30,8 @@ Profiles, pauses, schedules and limits are stored as normal firewall rules in th
 ### Router requirements
 
 - OpenWrt 25.12 with LuCI (`rpcd`, `uhttpd`); `luci-ssl` for HTTPS
-- The app signs in as `root`. On stock OpenWrt some ubus calls are not allowed for `root` over RPC; the app shows a small SSH snippet (More → Router permissions) that adds the missing read permissions. Nothing gets installed by it.
-- Optional: `conntrack` – without it (and without the agent) a pause only affects new connections
+- The app signs in as `root`. On stock OpenWrt some ubus calls are not allowed for `root` over RPC; the app shows a small SSH snippet (More → Router permissions) that adds the missing read permissions (one ACL file).
+- Optional: the `phantom-agent` package on the master (installed from within the app, see below) for daily limits and usage statistics. It also cuts running connections when a device gets paused – without it, a pause only affects new connections.
 
 ## Building the APK
 
