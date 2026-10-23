@@ -18,6 +18,12 @@ The app talks directly to your routers through the same interface the OpenWrt we
 - **Notifications** – background check about every 15 minutes: new devices, errors, routers offline, firmware updates, daily limit reached (with “+30 min” action)
 - **Security** – HTTPS by default with certificate pinning on first use, optional app login with password and fingerprint
 
+## Installation
+
+1. Download the latest `PhantomNetwork-*.apk` from [Releases](../../releases).
+2. Open it on your Android phone and allow installing apps from this source.
+3. Start the app – it finds the master router on your Wi‑Fi by itself; sign in with the router's root password.
+
 ## How it works
 
 | Part | Where it runs | What it does |
@@ -32,23 +38,7 @@ Profiles, pauses, schedules and limits are stored as normal firewall rules in th
 
 - OpenWrt 25.12 with LuCI (`rpcd`, `uhttpd`); `luci-ssl` for HTTPS
 - The app signs in as `root`. On stock OpenWrt some ubus calls are not allowed for `root` over RPC. The app installs the small `phantom-rights` package (one ACL file) on every router with one tap (More → Router packages) – no SSH needed. For routers without a package manager there is an equivalent SSH snippet.
-- Optional: the `phantom-agent` package on the master (installed from within the app, see below) for daily limits and usage statistics. It also cuts running connections when a device gets paused – without it, a pause only affects new connections.
-
-## Building the APK
-
-The build runs completely in Docker (tested on a Synology NAS). It downloads Node.js and the Android SDK into a cache volume on the first run.
-
-```sh
-docker compose up
-```
-
-The signed APK ends up in `out/PhantomNetwork-latest.apk` (plus a copy with version number).
-
-On the first build a new signing key is generated in `keys/` (`phantom.jks` + `passwort.txt`). **Keep this folder safe and private** – Android only installs updates signed with the same key. The folder is excluded by `.gitignore`.
-
-### Rebuilding the agent package
-
-Only needed when `agent/` or `rights/` change – see [`agent/README.md`](agent/README.md). `rights/build.sh` works the same way and uses the same signing key.
+- Optional: the `phantom-agent` package on the master (installed from within the app) for daily limits and usage statistics. It also cuts running connections when a device gets paused – without it, a pause only affects new connections.
 
 ## Project layout
 
