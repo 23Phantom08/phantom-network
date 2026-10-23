@@ -70,6 +70,10 @@ The app only talks to your own routers, the router in front of them (UPnP status
 
 Private, non‑commercial project, provided without warranty. OpenWrt is a trademark of the OpenWrt project; Cudy and FRITZ!Box are trademarks of their respective owners. This project is not affiliated with them.
 
+## Support
+
+Phantom Network is a free hobby project. If it is useful to you, you can buy me a coffee via [PayPal](https://paypal.me/23Phantom08) – thank you!
+
 ## License
 
 Copyright © 2026 Phantom
