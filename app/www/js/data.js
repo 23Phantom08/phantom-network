@@ -140,7 +140,11 @@ const Net = {
 			this.loading = false;
 			throw e;
 		}
-		await Promise.all(this.routers.map((r) => this.loadCudy(r)));
+		// Beim ersten Laden schon zeichnen, sobald der Master fertig ist – die Access Points kommen dazu, wenn sie antworten
+		const first = !this.loadedAt;
+		await Promise.all(this.routers.map((r) => this.loadCudy(r).then(() => {
+			if (first && r === this.master && this.onPartial) { this.buildDevices(); this.onPartial(); }
+		})));
 		this.buildDevices();
 		this.loadedAt = Date.now();
 		this.error = '';
@@ -188,7 +192,8 @@ const Net = {
 				const wd = await r.call('network.wireless', 'status', {}).catch(() => r.call('luci-rpc', 'getWirelessDevices', {}).catch(() => ({})));
 				for (const radio of Object.values(wd || {})) for (const i of radio.interfaces || []) if (i.ifname && !names.includes(i.ifname)) names.push(i.ifname);
 			}
-			for (const dev of names) {
+			// alle Funkmodule gleichzeitig abfragen (Reihenfolge bleibt)
+			inf.wifi.push(...await Promise.all(names.map(async (dev) => {
 				const [ i, a, hc ] = await Promise.all([
 					r.call('iwinfo', 'info', { device: dev }).catch(() => ({})),
 					r.call('iwinfo', 'assoclist', { device: dev }).catch(() => ({ results: [] })),
@@ -198,8 +203,8 @@ const Net = {
 				const hb = {};
 				for (const [ mac, c ] of Object.entries((hc && hc.clients) || {})) if (c && c.bytes) hb[macUp(mac)] = c.bytes;
 				const clients = (a.results || []).map((c) => Object.assign({}, c, { bytes: hb[macUp(c.mac)] || null }));
-				inf.wifi.push({ ifname: dev, ssid: i.ssid, mode: i.mode, band: bandOf(i.frequency), channel: i.channel, txpower: i.txpower, clients });
-			}
+				return { ifname: dev, ssid: i.ssid, mode: i.mode, band: bandOf(i.frequency), channel: i.channel, txpower: i.txpower, clients };
+			})));
 			if (board.hostname) r.name = board.hostname;
 			if (board.model) r.model = board.model;
 		} catch (e) {

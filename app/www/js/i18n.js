@@ -305,7 +305,8 @@ const EN = {
 	'Neuer Tag: Tageslimits zurückgesetzt': "New day: daily limits reset", 'automatisch ausgeschaltet': "turned off automatically",
 	'WLAN-Nachtschaltung:': "Wi‑Fi night mode:", 'wieder an': "back on", 'Pause beendet:': "Pause ended:", 'gestartet': "started",
 	'Die Rechte sind schon da (per SSH oder Firmware). Das Paket brauchst du nicht – damit tauchen die Rechte nur zusätzlich in der Weboberfläche unter System → Software auf.': "The permissions are already there (via SSH or firmware). You don't need the package – it only makes them show up in the web interface under System → Software as well.",
-	'· Kabel': "· Cable", 'Paket': "Package", 'Vollständig': "Complete", 'Überall installiert': "Installed everywhere", 'Nirgends installiert': "Not installed anywhere", 'Rechte fehlen:': "Permissions missing:",
+	'· Kabel': "· Cable", 'Eigene Zeit …': "Custom time …", 'Pausieren': "Pause", 'Für eine Dauer': "For a duration", 'Bis Uhrzeit': "Until a time",
+	'Stunden': "Hours", 'Stunde': "Hour", 'Minuten': "Minutes", 'Minute': "Minute", 'Bitte eine Dauer wählen': "Please choose a duration", 'mehr': "more", 'weniger': "less", 'Paket': "Package", 'Vollständig': "Complete", 'Überall installiert': "Installed everywhere", 'Nirgends installiert': "Not installed anywhere", 'Rechte fehlen:': "Permissions missing:",
 	'Das Paket „phantom-rights“ enthält nur die Rechte-Datei. Du kannst es für jeden Router einzeln oder für alle auf einmal installieren und entfernen.': "The “phantom-rights” package only contains the permission file. You can install and remove it for each router or for all at once.",
 	'Die Rechte bleiben über die SSH-Datei erhalten.': "The permissions stay in place through the SSH file.",
 	'Auf diesem Router fehlen danach die WLAN-Liste, „Kabelgerät online“ und die Temperatur.': "This router will then be missing the Wi‑Fi list, “cable device online” and the temperature.", 'Rechte-Paket entfernen?': "Remove permissions package?", 'Paket wird geändert …': "Changing package …",
@@ -331,6 +332,10 @@ const EN_EXACT = new Set([ 'Paket', 'ROUTER', 'von', 'aktiv', 'Uhr', 'Art', 'Ban
 
 /* Texte mit Zahlen: [Muster, Ersatz] – greifen vor den Textstücken */
 const EN_RX = [
+	[ /^Offline für (.+) – bis (heute|morgen) (\d\d:\d\d)$/, (m, d, w, t) => 'Offline for ' + d.replace(/(\d+) Std/, '$1 h').replace(/(\d+) Min/, '$1 min') + ' – until ' + (w === 'heute' ? 'today ' : 'tomorrow ') + t ],
+	[ /^Offline bis (heute|morgen) (\d\d:\d\d)$/, (m, w, t) => 'Offline until ' + (w === 'heute' ? 'today ' : 'tomorrow ') + t ],
+	[ /^(.+) pausiert bis (\d\d:\d\d)$/, '$1 paused until $2' ],
+	[ /^(.+) pausiert$/, '$1 paused' ],
 	[ /^Alle installieren \((\d+)\)$/, 'Install on all ($1)' ],
 	[ /^Alle entfernen \((\d+)\)$/, 'Remove from all ($1)' ],
 	[ /^Rechte-Paket von (.+) entfernen\?$/, 'Remove permissions package from $1?' ],

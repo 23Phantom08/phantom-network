@@ -144,8 +144,16 @@ async function start() {
 		S.login.host = Net.master.host; S.login.proto = Net.master.proto;
 		render();
 		try {
-			await relocate();
-			await Net.master.relogin();
+			// mDNS-Suche nur noch im Hintergrund – die bekannte Adresse wird sofort probiert.
+			// Nur wenn der Master dort nicht antwortet, wird auf das Suchergebnis gewartet (DHCP hat die Adresse geändert).
+			const loc = relocate().catch(() => []);
+			try { await Net.master.relogin(); } catch (e) {
+				if (e.needLogin) throw e;
+				const old = Net.master.host;
+				await loc;
+				if (Net.master.host === old) throw e;
+				await Net.master.relogin();
+			}
 			S.logged = true; S.ready = true;
 			render();
 			await refresh();
@@ -290,6 +298,7 @@ async function logout() {
 
 /* ================= Laden ================= */
 let refreshTimer = null;
+Net.onPartial = () => renderSoft();
 async function refresh(quiet) {
 	if (!S.logged || Net.loading) return;
 	if (!quiet) { S.busy.load = true; renderSoft(); }
@@ -622,7 +631,7 @@ VIEWS.device = (v) => {
 		body += `<button class="ph-btn ok" data-a="unpause" data-x="${d.id}">${spinOr('pause', icon('play', 18) + '&nbsp; Internet wieder freigeben')}</button>`;
 	} else {
 		body += `<div class="ph-card pad"><div class="ph-h">INTERNET PAUSIEREN</div>
-			<div class="ph-chips">${[ [ 30, '30 Min' ], [ 60, '1 Std' ], [ 120, '2 Std' ], [ 'night', 'Bis 7 Uhr' ], [ 0, 'Bis ich freigebe' ] ].map(([ x, l ]) => `<button class="ph-chip" data-a="pause" data-x="${d.id}|${x}">${l}</button>`).join('')}</div>
+			<div class="ph-chips">${[ [ 30, '30 Min' ], [ 60, '1 Std' ], [ 120, '2 Std' ], [ 'night', 'Bis 7 Uhr' ], [ 0, 'Bis ich freigebe' ] ].map(([ x, l ]) => `<button class="ph-chip" data-a="pause" data-x="${d.id}|${x}">${l}</button>`).join('')}<button class="ph-chip ph-chip-own" data-a="pauseOwn" data-x="${d.id}">${icon('clock', 16)} Eigene Zeit …</button></div>
 			${d.paused ? `<div class="ph-hint">${esc(status)} – das Profil bestimmt das gerade.</div>` : ''}
 			${caps.conntrack || caps.helper ? '' : '<div class="ph-hint">Ohne Paket „conntrack“ wirkt die Pause erst bei neuen Verbindungen.</div>'}</div>`;
 	}
@@ -1559,6 +1568,46 @@ A.pause = (x) => {
 	let until = null;
 	if (v === 'night') { const t = new Date(); t.setHours(7, 0, 0, 0); if (t <= new Date()) t.setDate(t.getDate() + 1); until = t.getTime(); } else if (Number(v)) until = Date.now() + Number(v) * 60000;
 	act('pause', () => Net.pauseDevice(d, true, until), d.name + ' pausiert' + (until ? ' bis ' + fmtTime(until) : ''));
+};
+/* Eigene Pausenzeit: für eine Dauer oder bis zu einer Uhrzeit (nach Mitternacht automatisch morgen) */
+const pad2 = (n) => String(n).padStart(2, '0');
+function pauseOwnUntil() {
+	const c = S.cp;
+	if (c.mode === 'dur') return c.dh * 60 + c.dm ? Date.now() + (c.dh * 60 + c.dm) * 60000 : null;
+	const t = new Date(); t.setHours(c.uh, c.um, 0, 0); if (t <= new Date()) t.setDate(t.getDate() + 1);
+	return t.getTime();
+}
+function pauseOwnHtml() {
+	const c = S.cp, dur = c.mode === 'dur', until = pauseOwnUntil();
+	const day = until && new Date(until).toDateString() !== new Date().toDateString() ? 'morgen ' : 'heute ';
+	const sum = !until ? 'Bitte eine Dauer wählen' : dur ? 'Offline für ' + fmtMin(c.dh * 60 + c.dm).trim() + ' – bis ' + day + fmtTime(until) : 'Offline bis ' + day + fmtTime(until);
+	const col = (val, unit, up, down) => `<div class="ph-step"><button class="ph-btn small" data-a="cpStep" data-x="${up}" aria-label="mehr">${icon('next', 18)}</button><b class="mono">${val}</b><button class="ph-btn small" data-a="cpStep" data-x="${down}" aria-label="weniger">${icon('next', 18)}</button><small>${unit}</small></div>`;
+	const quick = dur ? [ [ '45 Min', 0, 45 ], [ '1,5 Std', 1, 30 ], [ '3 Std', 3, 0 ], [ '5 Std', 5, 0 ] ] : [ [ '18:00', 18, 0 ], [ '20:00', 20, 0 ], [ '21:30', 21, 30 ], [ '22:00', 22, 0 ] ];
+	return `<h2>Internet pausieren</h2>
+		<div class="ph-seg"><button class="${dur ? 'on' : ''}" data-a="cpMode" data-x="dur">Für eine Dauer</button><button class="${dur ? '' : 'on'}" data-a="cpMode" data-x="until">Bis Uhrzeit</button></div>
+		<div class="ph-steps">${dur ? col(c.dh, 'Stunden', 'dh|1', 'dh|-1') : col(pad2(c.uh), 'Stunde', 'uh|1', 'uh|-1')}<span class="ph-stepsep mono">${dur ? '' : ':'}</span>${dur ? col(pad2(c.dm), 'Minuten', 'dm|5', 'dm|-5') : col(pad2(c.um), 'Minute', 'um|5', 'um|-5')}</div>
+		<div class="ph-chips" style="justify-content:center">${quick.map(([ l, h, m ]) => `<button class="ph-chip" data-a="cpQuick" data-x="${h}|${m}">${l}</button>`).join('')}</div>
+		<div class="ph-banner info"><div class="ph-line"><span style="flex:none;display:flex">${icon('clock', 20, 'var(--cyan)')}</span><div><b style="font-weight:500;font-size:13px">${esc(sum)}</b></div></div></div>
+		<div class="ph-grid2"><button class="ph-btn" data-a="sheetClose">Abbrechen</button><button class="ph-btn primary" data-a="cpGo"${until ? '' : ' disabled'}>Pausieren</button></div>`;
+}
+const cpShow = () => { S.sheet.html = pauseOwnHtml(); renderSheet(); };
+A.pauseOwn = (x) => {
+	const n = new Date(); n.setMinutes(n.getMinutes() + 60);
+	S.cp = Object.assign({ mode: 'dur', dh: 1, dm: 30, uh: n.getHours(), um: Math.ceil(n.getMinutes() / 5) * 5 % 60 }, S.cp || {}, { id: x });
+	openSheet(pauseOwnHtml());
+};
+A.cpMode = (x) => { S.cp.mode = x; cpShow(); };
+A.cpStep = (x) => {
+	const [ k, d ] = x.split('|'), max = k === 'dm' || k === 'um' ? 55 : 23;
+	let v = S.cp[k] + Number(d); if (v > max) v = 0; if (v < 0) v = max;
+	S.cp[k] = v; cpShow();
+};
+A.cpQuick = (x) => { const [ h, m ] = x.split('|').map(Number); if (S.cp.mode === 'dur') { S.cp.dh = h; S.cp.dm = m; } else { S.cp.uh = h; S.cp.um = m; } cpShow(); };
+A.cpGo = () => {
+	const until = pauseOwnUntil(), d = dev(S.cp.id);
+	if (!until || !d) return;
+	closeSheet();
+	act('pause', () => Net.pauseDevice(d, true, until), d.name + ' pausiert bis ' + fmtTime(until));
 };
 A.unpause = (x) => { const d = dev(x); act('pause', () => Net.pauseDevice(d, false), d.name + ' ist wieder online'); };
 A.prio = (x) => { const d = dev(x); act('prio', () => Net.setPrio(d, !d.prio), d.prio ? 'Nicht mehr bevorzugt' : d.name + ' wird bevorzugt'); };
