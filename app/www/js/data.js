@@ -925,7 +925,22 @@ const Net = {
 	wifiCmd(sections, disabled) {
 		return sections.map((x) => '/sbin/uci set wireless.' + x + '.disabled=' + disabled).join('; ') + '; /sbin/uci commit wireless; /sbin/wifi reload';
 	},
-	selfDelete(key) { return "sed -i '/# phantom:" + key + "$/d' /etc/crontabs/root"; },
+	/* Kein „#“ im Befehl: busybox-crond hält jedes „#“ für den Anfang eines Kommentars und schneidet die Zeile dort ab
+	   (dann bricht die ganze Zeile ab und nichts wird ausgeführt). Das Kennzeichen am Zeilenende darf bleiben. */
+	selfDelete(key) { return "sed -i '/ phantom:" + key + "$/d' /etc/crontabs/root"; },
+	/* Sicherung: Pausen, deren Ende vorbei ist, die aber noch sperren (z. B. alte cron-Zeile), selbst beenden */
+	async endExpiredPauses() {
+		const m = this.master, now = Date.now();
+		const late = Object.values(this.fw || {}).filter((r) => r['.type'] === 'rule' && /^block_/.test(r['.name']) && r.enabled !== '0' && r.phantom_until && Number(r.phantom_until) * 1000 < now - 60000);
+		if (!m || !late.length) return 0;
+		for (const r of late) {
+			await m.uciSet('firewall', r['.name'], { enabled: '0' });
+			await m.uciDel('firewall', r['.name'], [ 'phantom_until' ]).catch(() => {});
+		}
+		await m.uciCommit('firewall');
+		for (const r of late) await this.cronSet(m, 'pause_' + r['.name'].slice(6), []).catch(() => {});
+		return late.length;
+	},
 
 	/* WLAN auf allen Router schalten (gleiche SSID); Gäste-WLAN optional mit Ausschalt-Zeit */
 	async setWlan(ssid, on, opts) {

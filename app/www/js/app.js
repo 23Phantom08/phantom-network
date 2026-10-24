@@ -304,6 +304,7 @@ async function refresh(quiet) {
 	if (!quiet) { S.busy.load = true; renderSoft(); }
 	try {
 		await Net.load();
+		if (await Net.endExpiredPauses().catch(() => 0)) await Net.load();
 		checkCudyEvents();
 		if (!Net.fwList || Date.now() - Net.fwList.at > 12 * 3600e3) Net.fwVersions().then(() => { renderSoft(); syncRunner().catch(() => {}); });
 	} catch (e) {
