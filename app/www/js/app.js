@@ -360,7 +360,7 @@ function render(top) {
 	const key = viewKey();
 	const keep = !top && S.lastKey === key;
 	const opened = keep ? [ ...document.querySelectorAll('.ph-body details') ].map((d) => d.open) : [];
-	const scrollX = keep ? [ ...document.querySelectorAll('.ph-body .ph-chips.scroll') ].map((c) => c.scrollLeft) : [];
+	const scrollX = keep ? [ ...document.querySelectorAll('.ph-body .ph-chips.scroll, .ph-body .ph-nettiles.scroll') ].map((c) => c.scrollLeft) : [];
 	S.lastKey = key;
 	$app.innerHTML = `<div class="ph-screen">
 		<div class="ph-top">
@@ -376,7 +376,7 @@ function render(top) {
 	document.querySelectorAll('.ph-body details').forEach((d, i) => { if (opened[i]) d.open = true; });
 	const b = document.querySelector('.ph-body');
 	if (b) b.scrollTop = top ? 0 : (S.scroll[viewKey()] || 0);
-	document.querySelectorAll('.ph-body .ph-chips.scroll').forEach((c, i) => { if (scrollX[i]) c.scrollLeft = scrollX[i]; });
+	document.querySelectorAll('.ph-body .ph-chips.scroll, .ph-body .ph-nettiles.scroll').forEach((c, i) => { if (scrollX[i]) c.scrollLeft = scrollX[i]; });
 }
 /* Neu zeichnen, ohne dass Eingaben oder die Scroll-Position verloren gehen */
 function renderSoft() {
@@ -413,7 +413,7 @@ const bars = (pct, band) => {
 	return '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:none"><div class="ph-bars">' + [ 5, 8, 11, 14 ].map((h, i) => `<i style="height:${h}px" class="${i < n ? 'on' : ''}"></i>`).join('') + `</div><small style="font-size:10px;color:var(--muted);line-height:1;white-space:nowrap">${band && band !== 'Kabel' ? esc(band) + ' · ' : ''}${pct} %</small></div>`;
 };
 const spinOr = (k, txt) => (S.busy[k] ? '<div class="ph-spin"></div>' : txt);
-const devColor = (d) => (d.paused ? 'var(--bad)' : d.online ? (d.net === 'gast' ? 'var(--warn)' : d.net === 'sh' ? 'var(--ok)' : 'var(--cyan)') : 'rgba(165,159,191,.35)');
+const devColor = (d) => (d.paused ? 'var(--bad)' : d.online ? netHex(d.net) : 'rgba(165,159,191,.35)');
 const devIcon = (d, s) => icon(d.type, s || 20, '#0d0b16');
 const chip = (on, a, x, label) => `<button class="ph-chip${on ? ' on' : ''}" data-a="${a}" data-x="${attr(x)}">${label}</button>`;
 
@@ -512,8 +512,28 @@ function evRow(e) {
 }
 
 /* ---------- Geräte ---------- */
-const NET_COLOR = { lan: 'var(--cyan)', sh: 'var(--ok)', gast: 'var(--warn)' };
-const NET_HEX = { lan: '#22e3ff', sh: '#22e3a0', gast: '#f5b85b' };
+/* Alle Netze des Masters in fester Reihenfolge: Heimnetz, Smart Home, weitere, Gäste, Unbekannt.
+   Das erste Netz jeder Rolle behält seine gewohnte Farbe, alle anderen bekommen die nächste freie aus der Reihe. */
+const ROLE_HEX = { lan: '#22e3ff', sh: '#22e3a0', gast: '#f5b85b', '?': '#a59fbf' };
+const NET_PALETTE = [ '#ff6b8a', '#7c9cff', '#ff9f43', '#e879f9', '#a855f7', '#4ade80', '#38bdf8' ];
+function netOrder() {
+	const keys = [];
+	for (const i of Net.ifaces || []) {
+		if (i.interface === 'loopback' || (i.route || []).some((r) => r.target === '0.0.0.0' && r.mask === 0)) continue;
+		const k = netKeyOf(i.interface); if (!keys.includes(k)) keys.push(k);
+	}
+	for (const d of Net.devices) if (d.net && !keys.includes(d.net)) keys.push(d.net);
+	const rank = { lan: 0, sh: 1, other: 2, gast: 3, '?': 4 };
+	return keys.map((k, i) => [ k, i ]).sort((a, b) => (rank[netRole(a[0])] - rank[netRole(b[0])]) || (a[1] - b[1])).map((x) => x[0]);
+}
+function netHex(k) {
+	const seen = {}; let p = 0;
+	for (const x of netOrder()) {
+		const r = netRole(x), c = r !== 'other' && !seen[r] ? (seen[r] = ROLE_HEX[r]) : NET_PALETTE[p++ % NET_PALETTE.length];
+		if (x === k) return c;
+	}
+	return ROLE_HEX[netRole(k)] || NET_PALETTE[0];
+}
 /* WLAN-Name (SSID) je Netz – kommt automatisch vom Master */
 function netSsid(k) {
 	const w = Net.wlans().find((x) => {
@@ -533,14 +553,13 @@ function devListHtml() {
 	const list = devFiltered();
 	const on = list.filter((d) => d.online && (f === 'all' || d.net === f));
 	const off = list.filter((d) => !d.online && (f === 'all' || d.net === f));
-	const order = [ 'lan', 'sh', 'gast' ];
-	const keys = [ ...order, ...[ ...new Set(on.map((d) => d.net)) ].filter((k) => !order.includes(k)) ];
+	const keys = netOrder();
 	let h = '';
 	for (const k of keys) {
 		const ds = on.filter((d) => d.net === k);
 		if (!ds.length) continue;
 		const w = netSsid(k);
-		h += `<section class="ph-devgroup"><div class="ph-devhead"><i style="background:${NET_COLOR[k] || 'var(--violet)'}"></i><b>${esc(w ? w.ssid : (netName(k)))}</b><small>${esc((w ? (netName(k)) + ' · ' : '') + ds.length + ' online')}</small></div>
+		h += `<section class="ph-devgroup"><div class="ph-devhead"><i style="background:${netHex(k)}"></i><b>${esc(w ? w.ssid : (netName(k)))}</b><small>${esc((w ? (netName(k)) + ' · ' : '') + ds.length + ' online')}</small></div>
 			<div class="ph-card list">${devRows(ds)}</div></section>`;
 	}
 	if (!on.length && !off.length) h += '<div class="ph-card pad"><div class="ph-dim">Keine Geräte gefunden</div></div>';
@@ -555,15 +574,15 @@ function devListHtml() {
 }
 VIEWS.dev = () => {
 	const all = Net.devices.filter((d) => !d.isCudy);
-	const tiles = [ 'lan', 'sh', 'gast' ].map((k) => {
+	const tiles = netOrder().filter((k) => k !== '?').map((k) => {
 		const w = netSsid(k);
 		if (!w && !all.some((d) => d.net === k)) return '';
 		const n = all.filter((d) => d.net === k && d.online).length;
 		const sel = S.devFilter === k;
-		return `<button class="ph-nettile${sel ? ' on' : ''}" style="--c:${NET_HEX[k]}" data-a="devFilter" data-x="${k}"><b>${n}</b><span><i></i><em>${esc(w ? w.ssid : netName(k))}</em></span><small>${esc(netName(k))}${w && !w.on ? ' · aus' : ''}</small></button>`;
-	}).join('');
+		return `<button class="ph-nettile${sel ? ' on' : ''}" style="--c:${netHex(k)}" data-a="devFilter" data-x="${k}"><b>${n}</b><span><i></i><em>${esc(w ? w.ssid : netName(k))}</em></span><small>${esc(netName(k))}${w && !w.on ? ' · aus' : ''}</small></button>`;
+	}).filter(Boolean);
 	let body = `<label class="ph-field ph-search">${icon('search', 18, 'var(--dim)')}<input type="search" data-in="devSearch" placeholder="Name, IP oder MAC" value="${attr(S.devSearch)}"></label>
-		<div class="ph-nettiles">${tiles}</div>
+		<div class="ph-nettiles${tiles.length > 3 ? ' scroll' : ''}">${tiles.join('')}</div>
 		<div class="ph-devlist" data-list="dev">${devListHtml()}</div>`;
 	return { title: 'Geräte', sub: all.filter((d) => d.online).length + ' online · ' + all.length + ' bekannt', body };
 };
@@ -572,7 +591,7 @@ function devRows(list) {
 	return list.map((d) => {
 		const where = d.online ? (d.band === 'Kabel' ? 'Kabel' : String(d.cudyName || '').replace(/^Cudy-/i, '')) : 'offline';
 		const sub = `<span class="mono">${esc(d.ip || '')}</span>${d.ip ? ' · ' : ''}${esc(where)}`;
-		const c = d.paused ? 'var(--bad)' : !d.online ? 'var(--dim)' : NET_COLOR[d.net] || 'var(--violet)';
+		const c = d.paused ? 'var(--bad)' : !d.online ? 'var(--dim)' : netHex(d.net);
 		let right = d.paused ? '<span class="ph-badge">Pause</span>' : '';
 		if (!d.paused && d.prio) right += icon('star', 16, 'var(--warn)');
 		if (!d.paused && d.online) right += d.wifi ? bars(d.pct, d.band) : '<span class="ph-lan">LAN</span>';

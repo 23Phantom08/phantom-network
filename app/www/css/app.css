@@ -189,6 +189,9 @@ label.ph-field { display: flex; flex-direction: column; gap: 6px; font-size: 13p
 .ph-field.ph-search input { flex: 1; min-width: 0; height: 100%; border: 0; padding: 0; background: transparent; outline: none; }
 .ph-ico.soft { background: color-mix(in srgb, var(--c) 13%, transparent); border: 1px solid color-mix(in srgb, var(--c) 35%, transparent); width: 40px; height: 40px; }
 .ph-nettiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.ph-nettiles.scroll { display: flex; overflow-x: auto; margin: 0 -16px; padding: 0 16px 2px; scroll-snap-type: x mandatory; scroll-padding: 0 16px; scrollbar-width: none; }
+.ph-nettiles.scroll::-webkit-scrollbar { height: 0; }
+.ph-nettiles.scroll .ph-nettile { flex: none; width: 118px; scroll-snap-align: start; }
 .ph-nettile { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; padding: 10px 12px; border-radius: 14px; background: var(--card); border: 1px solid var(--line); text-align: left; }
 .ph-nettile.on { background: color-mix(in srgb, var(--c) 14%, transparent); border-color: var(--c); }
 .ph-nettile b { font-size: 18px; font-weight: 700; line-height: 1; }

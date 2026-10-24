@@ -24,7 +24,9 @@ function ipNum(ip) { const p = String(ip || '').split('.').map(Number); return p
 function maskNum(bits) { bits = Number(bits) || 0; return bits <= 0 ? 0 : (0xFFFFFFFF << (32 - Math.min(32, bits))) >>> 0; }
 function inSubnet(ip, net, bits) { const a = ipNum(ip), b = ipNum(net); if (a === null || b === null) return false; const m = maskNum(bits); return ((a & m) >>> 0) === ((b & m) >>> 0); }
 function netAddr(ip, bits) { const n = (ipNum(ip) & maskNum(bits)) >>> 0; return [ n >>> 24, (n >>> 16) & 255, (n >>> 8) & 255, n & 255 ].join('.') + '/' + bits; }
-function netKeyOf(name) { const n = String(name || '').toLowerCase(); return n === 'lan' ? 'lan' : /gast|guest/.test(n) ? 'gast' : /smart|iot|(^|[_-])sh([_-]|$)/.test(n) ? 'sh' : n; }
+/* Jedes Netz behält seinen eigenen Namen aus OpenWrt (nichts verschmilzt); die Rolle gibt nur Farbe und Sonderfunktionen */
+function netKeyOf(name) { return String(name || '').toLowerCase(); }
+function netRole(k) { const n = String(k || '').toLowerCase(); return n === 'lan' ? 'lan' : n === '?' ? '?' : /gast|guest/.test(n) ? 'gast' : /smart|iot|(^|[_-])sh([_-]|$)/.test(n) ? 'sh' : 'other'; }
 
 /* Firmware-Updates: neueste Version im SELBEN Zweig (25.12.x),
    keine Sprünge auf einen neuen Hauptzweig, keine Release-Candidates */
@@ -67,7 +69,7 @@ function guessType(name, net) {
 	if (/echo|alexa|sonos|speaker|toniebox|homepod|nest-?mini/.test(n)) return 'speaker';
 	if (/cudy|router|openwrt|ap\d|access/.test(n)) return 'router';
 	if (/iphone|android|galaxy|pixel|handy|phone|s2\d|a\d\d|redmi|xiaomi/.test(n)) return 'phone';
-	if (net === 'sh') return 'plug';
+	if (netRole(net) === 'sh') return 'plug';
 	return 'other';
 }
 
@@ -1005,7 +1007,7 @@ const Net = {
 		await m.uciAdd('network', 'wireguard_' + v.iface, sec, { description: label, public_key: keys.pubkey, private_key: keys.privkey, allowed_ips: [ addr + '/32' ], route_allowed_ips: '0' });
 		await m.uciCommit('network');
 		// Netze des Masters (ohne Internet-Seite, Gäste und das VPN selbst) – für „nur Zuhause“
-		const homeNets = (this.ifaces || []).filter((i) => i.up && i.interface !== v.iface && netKeyOf(i.interface) !== 'gast' && !(i.route || []).some((r) => r.target === '0.0.0.0' && r.mask === 0))
+		const homeNets = (this.ifaces || []).filter((i) => i.up && i.interface !== v.iface && netRole(i.interface) !== 'gast' && !(i.route || []).some((r) => r.target === '0.0.0.0' && r.mask === 0))
 			.flatMap((i) => (i['ipv4-address'] || []).map((a) => ({ name: i.interface, net: netAddr(a.address, a.mask), ip: a.address })));
 		const lanNet = homeNets.find((x) => x.name === 'lan') || homeNets[0];
 		const lanIp = lanNet ? lanNet.ip : '';
