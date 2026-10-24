@@ -946,18 +946,19 @@ const Net = {
 	async setWlan(ssid, on, opts) {
 		opts = opts || {};
 		const errs = [];
-		for (const r of this.routers) {
+		// alle Router gleichzeitig (wie die HA-Integration: pro Router alle Sektionen setzen, ein commit, ein „network reload“)
+		await Promise.all(this.routers.map(async (r) => {
 			try {
 				const w = await r.uciGet('wireless');
 				const secs = Object.values(w).filter((s) => s['.type'] === 'wifi-iface' && s.ssid === ssid && s.mode === 'ap').map((s) => s['.name']);
-				for (const x of secs) await r.uciSet('wireless', x, { disabled: on ? '0' : '1' });
+				await Promise.all(secs.map((x) => r.uciSet('wireless', x, { disabled: on ? '0' : '1' })));
 				if (secs.length) await r.uciCommit('wireless');
 				if (opts.offAt !== undefined && secs.length) {
 					if (on && opts.offAt) await this.cronSet(r, 'guest', [ this.cronWhen(opts.offAt) + ' ' + this.wifiCmd(secs, 1) + '; ' + this.selfDelete('guest') ]);
 					else await this.cronSet(r, 'guest', []);
 				}
 			} catch (e) { errs.push(r.name); }
-		}
+		}));
 		return errs;
 	},
 	guestOffAt() { return this.cronAt(this.master, 'guest'); },

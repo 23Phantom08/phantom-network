@@ -1762,20 +1762,28 @@ A.wlan = (x) => {
 	setWlan(x, on, w.guest ? { offAt: 0 } : undefined);
 };
 A.wlanYes = (x) => { closeSheet(); setWlan(x, false); };
-function setWlan(ssid, on, opts) {
-	act('wlan', async () => {
-		const errs = await Net.setWlan(ssid, on, opts);
-		if (errs.length) throw new Error('Nicht erreicht: ' + errs.join(', '));
-	}, ssid + (on ? ' eingeschaltet' : ' ausgeschaltet'));
+/* WLAN schalten: Schalter springt sofort um, die Router arbeiten im Hintergrund (alle gleichzeitig).
+   Klappt es nicht, springt er zurück. */
+function setWlan(ssid, on, opts, msg) {
+	if (S.busy.wlan) return;
+	const secs = Net.sections(Net.wireless, 'wifi-iface').filter((s) => s.ssid === ssid && s.mode === 'ap');
+	const old = secs.map((s) => s.disabled);
+	secs.forEach((s) => { s.disabled = on ? '0' : '1'; });
+	S.busy.wlan = true; renderSoft();
+	Net.setWlan(ssid, on, opts).then((errs) => {
+		S.busy.wlan = false;
+		if (errs.length === Net.routers.length) { secs.forEach((s, i) => { s.disabled = old[i]; }); toast('Nicht erreicht: ' + errs.join(', '), true); }
+		else if (errs.length) toast('Nicht erreicht: ' + errs.join(', '), true);
+		else toast(msg || ssid + (on ? ' eingeschaltet' : ' ausgeschaltet'));
+		renderSoft();
+		setTimeout(() => refresh(true), 4000);   // echten Stand nachladen, wenn das WLAN neu gestartet ist
+	});
 }
 A.guestFor = (x) => {
 	const g = Net.wlans().find((w) => w.guest);
 	let off = 0;
 	if (x === 'midnight') { const t = new Date(); t.setHours(23, 59, 0, 0); off = t.getTime(); } else if (Number(x)) off = Date.now() + Number(x) * 60000;
-	act('wlan', async () => {
-		const errs = await Net.setWlan(g.ssid, true, { offAt: off });
-		if (errs.length) throw new Error('Nicht erreicht: ' + errs.join(', '));
-	}, off ? 'Gäste-WLAN an bis ' + fmtTime(off) : 'Gäste-WLAN an');
+	setWlan(g.ssid, true, { offAt: off }, off ? 'Gäste-WLAN an bis ' + fmtTime(off) : 'Gäste-WLAN an');
 };
 A.shareGuest = () => {
 	const g = Net.wlans().find((w) => w.guest);
