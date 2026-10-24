@@ -73,7 +73,7 @@ public class PhantomCheckWorker extends Worker {
     //  - hostapd „key addition failed“: bekannte Meldung der WLAN-Treiber beim Schlüsselwechsel, WLAN läuft normal weiter
     //  - dnsmasq „failed to send packet“: kurz während ein Netz neu startet (z. B. VPN an/aus) – echte Ausfälle meldet „Cudy antwortet nicht“
     //  - procd „Got unexpected signal“: procd ignoriert das Signal nur und schreibt es ins Protokoll
-    private static final Pattern NOISE = Pattern.compile("crond(\\[\\d+\\])?: USER .* cmd|drop_caches|nl80211: kernel reports: key addition failed|dnsmasq\\[\\d+\\]: failed to send packet|procd: Got unexpected signal");
+    private static final Pattern NOISE = Pattern.compile("crond(\\[\\d+\\])?: |drop_caches|nl80211: kernel reports: key addition failed|dnsmasq\\[\\d+\\]: failed to send packet|procd: Got unexpected signal");
 
     public PhantomCheckWorker(@NonNull Context context, @NonNull WorkerParameters params) {
         super(context, params);
