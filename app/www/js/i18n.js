@@ -186,7 +186,7 @@ const EN = {
 	'Ungültiges Ziel': "Invalid target", 'Keine Antwort (Code': "No answer (code",
 
 	// Mehr
-	'Protokoll': "Log", 'Neue Geräte, Pausen, WLAN': "New devices, pauses, Wi‑Fi", 'Router & Anmeldungen': "Routers & sign-ins", 'brauchen Hilfe': "need help",
+	'Protokoll': "Log", 'Geräte-Protokoll': "Device log", 'Neue Geräte, Pausen, WLAN': "New devices, pauses, Wi‑Fi", 'Router & Anmeldungen': "Routers & sign-ins", 'brauchen Hilfe': "need help",
 	'VPN (WireGuard)': "VPN (WireGuard)", 'Benachrichtigungen': "Notifications", 'Einstellungen aller Router aufs Handy sichern': "Back up all router settings to the phone",
 	'Router-Rechte': "Router permissions", 'Fehlen auf': "Missing on", 'Auf allen Routern vollständig': "Complete on all routers", 'Sicherheit': "Security", 'App-Login an': "App login on",
 	'· Fingerabdruck': "· fingerprint", 'App-Login aus': "App login off", 'Alle Router mit HTTPS': "All routers on HTTPS", 'Router noch ohne HTTPS': "routers still without HTTPS",

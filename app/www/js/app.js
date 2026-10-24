@@ -1248,12 +1248,12 @@ VIEWS.more = () => {
 	const v = Net.vpn();
 	const item = (ic, c, t, s, x, right) => row(icon(ic, 20, '#0d0b16'), c, t, s, right || icon('next', 18, 'var(--muted)'), 'push', x);
 	const body = `<div class="ph-card list">
-		${item('log', 'var(--cyan)', 'Protokoll', 'Neue Geräte, Pausen, WLAN', 'log')}
 		${item('router', 'var(--violet)', 'Router & Anmeldungen', Net.routers.length + ' Router' + (need ? ' · ' + need + ' brauchen Hilfe' : ''), 'cudys', need ? '<span class="ph-badge">' + need + '</span>' : '')}
-		${item('shield', 'var(--ok)', 'VPN (WireGuard)', v ? (v.on ? 'Eingeschaltet' : 'Ausgeschaltet') : 'nicht eingerichtet', 'vpn')}
-		${item('bell', 'var(--warn)', 'Benachrichtigungen', S.notify.on ? 'An' : 'Aus', 'notify')}
-		${item('share', 'var(--ok)', 'Backups', 'Einstellungen aller Router aufs Handy sichern', 'backup')}
 		${item('lock', 'var(--cyan)', 'Router-Pakete', Net.missingRights().length ? 'Rechte fehlen auf ' + Net.missingRights().length + ' Router' : 'Rechte vollständig' + (Net.caps().helper ? ' · Tageslimit-Zähler' : ''), 'helper', Net.missingRights().length ? '<span class="ph-badge new">!</span>' : '')}
+		${item('log', 'var(--violet)', 'Geräte-Protokoll', 'Neue Geräte, Pausen, WLAN', 'log')}
+		${item('shield', 'var(--ok)', 'VPN (WireGuard)', v ? (v.on ? 'Eingeschaltet' : 'Ausgeschaltet') : 'nicht eingerichtet', 'vpn')}
+		${item('share', 'var(--cyan)', 'Backups', 'Einstellungen aller Router aufs Handy sichern', 'backup')}
+		${item('bell', 'var(--warn)', 'Benachrichtigungen', S.notify.on ? 'An' : 'Aus', 'notify')}
 	</div>
 	<div class="ph-card list">
 		${item('lock', 'var(--violet)', 'Sicherheit', S.lock.on ? 'App-Login an' + (S.lock.fp ? ' · Fingerabdruck' : '') : 'App-Login aus', 'security')}
@@ -1273,7 +1273,7 @@ VIEWS.log = () => {
 	const body = `<div class="ph-chips scroll">${chip(f === 'all', 'logFilter', 'all', 'Alle')}${Object.entries(KINDS).map(([ k, l ]) => chip(f === k, 'logFilter', k, l)).join('')}</div>
 		<div class="ph-card list">${evs.length ? evs.slice(0, 150).map(evRow).join('') : '<div class="ph-dim" style="padding:18px">Keine Einträge</div>'}</div>
 		<div class="ph-dim">Aus dem Systemprotokoll der Router (WLAN-Verbindungen, vergebene IPs). Es reicht je Router etwa einige Stunden zurück.</div>`;
-	return { title: 'Protokoll', body };
+	return { title: 'Geräte-Protokoll', body };
 };
 
 VIEWS.cudys = () => {
