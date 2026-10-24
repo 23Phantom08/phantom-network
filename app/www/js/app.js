@@ -1396,25 +1396,27 @@ VIEWS.helper = () => {
 	const routers = Net.routers.map((r) => ({ r, i: Net.info[r.id] }));
 	const missing = routers.filter((x) => x.i && x.i.ok && !x.i.acl);
 	const noPkg = routers.filter((x) => x.i && x.i.ok && !x.i.rightsPkg);
+	const withPkg = routers.filter((x) => x.i && x.i.ok && x.i.rightsPkg);
 	const run = S.busy.rights;
 	const list = routers.map(({ r, i }) => {
 		const live = run && S.rightsAt === r.id;
 		const st = live ? 'run' : !i || !i.ok ? 'off' : i.acl ? 'ok' : 'miss';
 		const how = i && i.ok ? (i.rightsPkg ? ' · Paket' : i.rightsSsh ? ' · per SSH' : i.acl ? ' · Firmware' : '') : '';
-		const sub = st === 'run' ? 'Paket wird geändert …' : st === 'off' ? 'nicht erreichbar' : st === 'ok' ? 'Rechte vollständig' + how : 'Es fehlt: ' + (i.aclMissing || []).join(', ');
-		const t = st === 'run' ? tag('info', 'läuft') : st === 'ok' ? tag('ok', 'vollständig') : st === 'off' ? tag('off', 'offline') : tag('warn', 'fehlen');
-		return row(icon('router', 20, '#0d0b16'), st === 'ok' ? 'var(--ok)' : st === 'run' ? 'var(--cyan)' : st === 'off' ? 'rgba(165,159,191,.35)' : 'var(--warn)', r.name || r.host, sub, t);
+		const sub = st === 'run' ? 'Paket wird geändert …' : st === 'off' ? 'nicht erreichbar' : st === 'ok' ? 'Vollständig' + how : 'Es fehlt: ' + (i.aclMissing || []).join(', ');
+		// rechts: Knopf für genau diesen Router (Paket drauf → entfernen, sonst installieren)
+		const right = st === 'run' ? '<div class="ph-spin"></div>' : st === 'off' ? tag('off', 'offline')
+			: i.rightsPkg ? `<button class="ph-btn small danger" style="flex:none" data-a="rightsOneRm" data-x="${attr(r.id)}"${run ? ' disabled' : ''}>${icon('trash', 16)}&nbsp;Entfernen</button>`
+			: `<button class="ph-btn small primary" style="flex:none" data-a="rightsOne" data-x="${attr(r.id)}"${run ? ' disabled' : ''}>${icon('plus', 16)}&nbsp;Paket</button>`;
+		return row(icon('router', 20, '#0d0b16'), st === 'ok' ? 'var(--ok)' : st === 'run' ? 'var(--cyan)' : st === 'off' ? 'rgba(165,159,191,.35)' : 'var(--warn)', r.name || r.host, sub, right);
 	}).join('');
-	const btn = run ? `<button class="ph-btn primary" disabled><div class="ph-spin"></div>&nbsp; Wird eingerichtet …</button>`
-		: missing.length ? `<button class="ph-btn primary" data-a="rightsInstall">${icon('plus', 18)}&nbsp; Rechte einrichten (${missing.length} Router)</button>`
-		: noPkg.length ? `<button class="ph-btn primary" data-a="rightsInstall">${icon('plus', 18)}&nbsp; Paket installieren (${noPkg.length} Router)</button>`
-		: `<button class="ph-btn" disabled>${icon('check', 18)}&nbsp; Auf allen Routern installiert</button>`;
-	const withPkg = routers.filter((x) => x.i && x.i.ok && x.i.rightsPkg);
-	const rmBtn = withPkg.length && !run ? `<button class="ph-btn danger" data-a="rightsRemove">${icon('trash', 18)}&nbsp; Paket entfernen (${withPkg.length} Router)</button>` : '';
+	const allIn = noPkg.length && !run ? `<button class="ph-btn primary" data-a="rightsInstall">${icon('plus', 18)}&nbsp; Alle installieren (${noPkg.length})</button>` : `<button class="ph-btn" disabled>${run ? '<div class="ph-spin"></div>' : icon('check', 18) + '&nbsp; Überall installiert'}</button>`;
+	const allOut = withPkg.length && !run ? `<button class="ph-btn danger" data-a="rightsRemove">${icon('trash', 18)}&nbsp; Alle entfernen (${withPkg.length})</button>` : `<button class="ph-btn" disabled>Nirgends installiert</button>`;
+	const btns = `<div class="ph-grid2">${allIn}${allOut}</div>`;
+	const info = 'Das Paket „phantom-rights“ enthält nur die Rechte-Datei. Du kannst es für jeden Router einzeln oder für alle auf einmal installieren und entfernen.';
 	let body = '<div class="ph-h" style="padding:0 4px">ROUTER-RECHTE · ALLE ROUTER</div>';
 	body += missing.length
-		? `<div class="ph-banner warn"><div class="ph-line"><span style="flex:none;display:flex">${icon('lock', 22, 'var(--warn)')}</span><div><b>${missing.length} Router ohne volle Rechte</b><small>Ohne diese Rechte fehlen die WLAN-Liste, „Kabelgerät online“ und die Temperatur. Die App installiert dafür das kleine Paket „phantom-rights“ – ohne SSH.</small></div></div>${btn}${rmBtn}</div>`
-		: `<div class="ph-banner ok"><div class="ph-line"><span style="flex:none;display:flex">${icon('check', 22, 'var(--ok)')}</span><div><b>Alle Router haben die Rechte</b><small>${noPkg.length ? 'Die Rechte sind schon da (per SSH oder Firmware). Das Paket brauchst du nicht – damit tauchen die Rechte nur zusätzlich in der Weboberfläche unter System → Software auf.' : 'Das Paket bleibt auch nach einem Firmware-Update mit „Einstellungen behalten“. Entfernen geht auch in der Weboberfläche unter System → Software.'}</small></div></div>${btn}${rmBtn}</div>`;
+		? `<div class="ph-banner warn"><div class="ph-line"><span style="flex:none;display:flex">${icon('lock', 22, 'var(--warn)')}</span><div><b>${missing.length} Router ohne volle Rechte</b><small>${info}</small></div></div>${btns}</div>`
+		: `<div class="ph-banner ok"><div class="ph-line"><span style="flex:none;display:flex">${icon('check', 22, 'var(--ok)')}</span><div><b>Alle Router haben die Rechte</b><small>${info}</small></div></div>${btns}</div>`;
 	body += `<div class="ph-card list"><div class="ph-h">STATUS</div>${list}</div>
 		<details class="ph-card pad" style="display:block"><summary class="ph-h" style="min-height:32px">Ohne Paketverwaltung? SSH-Block</summary>
 		<div style="display:flex;flex-direction:column;gap:10px;margin-top:8px"><div class="ph-hint">Nur nötig, wenn der Router keine Pakete installieren kann (sehr kleine eigene Firmware). Der Block legt die Datei <span class="mono">root.json</span> an und trägt sie in <span class="mono">/etc/sysupgrade.conf</span> ein, damit sie ein Firmware-Update übersteht.</div>
@@ -1789,6 +1791,16 @@ A.reboot = (x) => {
 		<button class="ph-btn danger" data-a="rebootYes" data-x="${x}">Neu starten</button><button class="ph-btn" data-a="sheetClose">Abbrechen</button>`);
 };
 A.agentInstall = () => act('agent', () => Net.agentInstall(), 'Tageslimit ist eingerichtet');
+/* ein einzelner Router */
+const rightsRun = (r, fn, ok) => act('rights', async () => { S.rightsAt = r.id; renderSoft(); try { await fn(r); } finally { S.rightsAt = null; } }, ok);
+A.rightsOne = (x) => { const r = Net.byId(x); if (r) rightsRun(r, (y) => Net.rightsInstall(y), 'Rechte-Paket auf ' + (r.name || r.host) + ' installiert'); };
+A.rightsOneRm = (x) => {
+	const r = Net.byId(x), i = r && Net.info[r.id];
+	if (!r) return;
+	openSheet(`<h2>Rechte-Paket von ${esc(r.name || r.host)} entfernen?</h2><div class="ph-hint">${i && i.rightsSsh ? 'Die Rechte bleiben über die SSH-Datei erhalten.' : 'Auf diesem Router fehlen danach die WLAN-Liste, „Kabelgerät online“ und die Temperatur.'}</div>
+	<button class="ph-btn danger" data-a="rightsOneRmYes" data-x="${attr(x)}">Entfernen</button><button class="ph-btn" data-a="sheetClose">Abbrechen</button>`);
+};
+A.rightsOneRmYes = (x) => { closeSheet(); const r = Net.byId(x); if (r) rightsRun(r, (y) => Net.rightsRemove(y), 'Rechte-Paket von ' + (r.name || r.host) + ' entfernt'); };
 A.rightsRemove = () => {
 	const n = Net.routers.filter((r) => { const i = Net.info[r.id]; return i && i.ok && i.rightsPkg; }).length;
 	openSheet(`<h2>Rechte-Paket entfernen?</h2><div class="ph-hint">„phantom-rights“ wird von ${n} ${n === 1 ? 'Router' : 'Routern'} entfernt.</div><div class="ph-hint">Wo die Rechte nicht zusätzlich per SSH oder Firmware da sind, fehlen danach die WLAN-Liste, „Kabelgerät online“ und die Temperatur.</div>
@@ -1807,10 +1819,7 @@ A.rightsRemoveYes = () => { closeSheet(); act('rights', async () => {
 }, (n) => n === 1 ? 'Paket von 1 Router entfernt' : 'Paket von ' + n + ' Routern entfernt'); };
 /* Rechte-Paket auf jedem erreichbaren Router ohne Paket, nacheinander */
 A.rightsInstall = () => act('rights', async () => {
-	// fehlen irgendwo Rechte: nur dort; sonst auf allen Routern, die das Paket noch nicht haben
-	const ok = Net.routers.filter((r) => { const i = Net.info[r.id]; return i && i.ok; });
-	const miss = ok.filter((r) => !Net.info[r.id].acl);
-	const todo = miss.length ? miss : ok.filter((r) => !Net.info[r.id].rightsPkg);
+	const todo = Net.routers.filter((r) => { const i = Net.info[r.id]; return i && i.ok && !i.rightsPkg; });
 	const bad = [];
 	for (const r of todo) {
 		S.rightsAt = r.id; renderSoft();

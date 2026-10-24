@@ -305,7 +305,10 @@ const EN = {
 	'Neuer Tag: Tageslimits zurückgesetzt': "New day: daily limits reset", 'automatisch ausgeschaltet': "turned off automatically",
 	'WLAN-Nachtschaltung:': "Wi‑Fi night mode:", 'wieder an': "back on", 'Pause beendet:': "Pause ended:", 'gestartet': "started",
 	'Die Rechte sind schon da (per SSH oder Firmware). Das Paket brauchst du nicht – damit tauchen die Rechte nur zusätzlich in der Weboberfläche unter System → Software auf.': "The permissions are already there (via SSH or firmware). You don't need the package – it only makes them show up in the web interface under System → Software as well.",
-	'· Kabel': "· Cable", 'Rechte-Paket entfernen?': "Remove permissions package?", 'Paket wird geändert …': "Changing package …",
+	'· Kabel': "· Cable", 'Paket': "Package", 'Vollständig': "Complete", 'Überall installiert': "Installed everywhere", 'Nirgends installiert': "Not installed anywhere", 'Rechte fehlen:': "Permissions missing:",
+	'Das Paket „phantom-rights“ enthält nur die Rechte-Datei. Du kannst es für jeden Router einzeln oder für alle auf einmal installieren und entfernen.': "The “phantom-rights” package only contains the permission file. You can install and remove it for each router or for all at once.",
+	'Die Rechte bleiben über die SSH-Datei erhalten.': "The permissions stay in place through the SSH file.",
+	'Auf diesem Router fehlen danach die WLAN-Liste, „Kabelgerät online“ und die Temperatur.': "This router will then be missing the Wi‑Fi list, “cable device online” and the temperature.", 'Rechte-Paket entfernen?': "Remove permissions package?", 'Paket wird geändert …': "Changing package …",
 	'Wo die Rechte nicht zusätzlich per SSH oder Firmware da sind, fehlen danach die WLAN-Liste, „Kabelgerät online“ und die Temperatur.': "Where the permissions don't also come from SSH or the firmware, the Wi‑Fi list, “cable device online” and the temperature will be missing afterwards.",
 	'Das Paket bleibt auch nach einem Firmware-Update mit „Einstellungen behalten“. Entfernen geht auch in der Weboberfläche unter System → Software.': "The package survives a firmware update with “Keep settings”. You can also remove it in the web interface under System → Software.",
 	'Paket von 1 Router entfernt': "Package removed from 1 router", 'Nicht entfernt –': "Not removed –", 'WLAN-Liste': "Wi‑Fi list", 'ARP-Tabelle': "ARP table", 'Router-Pakete': "Router packages", 'ROUTER-RECHTE · ALLE ROUTER': "ROUTER PERMISSIONS · ALL ROUTERS", 'TAGESLIMIT-ZÄHLER · NUR MASTER': "DAILY LIMIT COUNTER · MASTER ONLY",
@@ -324,10 +327,15 @@ const EN = {
 };
 
 /* Kurze Wörter, die nur als ganzer Text übersetzt werden (sonst würde z. B. aus „20:30 Uhr“ „20:30 Watch“) */
-const EN_EXACT = new Set([ 'ROUTER', 'von', 'aktiv', 'Uhr', 'Art', 'Band', 'Stand', 'Hell', 'Dunkel', 'Licht', 'Rollo', 'Kabel', 'Telefon', 'Schule', 'Mittel', 'Signal', 'Name', 'Seit', 'Profil', 'Gerät', 'Block' ]);
+const EN_EXACT = new Set([ 'Paket', 'ROUTER', 'von', 'aktiv', 'Uhr', 'Art', 'Band', 'Stand', 'Hell', 'Dunkel', 'Licht', 'Rollo', 'Kabel', 'Telefon', 'Schule', 'Mittel', 'Signal', 'Name', 'Seit', 'Profil', 'Gerät', 'Block' ]);
 
 /* Texte mit Zahlen: [Muster, Ersatz] – greifen vor den Textstücken */
 const EN_RX = [
+	[ /^Alle installieren \((\d+)\)$/, 'Install on all ($1)' ],
+	[ /^Alle entfernen \((\d+)\)$/, 'Remove from all ($1)' ],
+	[ /^Rechte-Paket von (.+) entfernen\?$/, 'Remove permissions package from $1?' ],
+	[ /^Rechte-Paket auf (.+) installiert$/, 'Permissions package installed on $1' ],
+	[ /^Rechte-Paket von (.+) entfernt$/, 'Permissions package removed from $1' ],
 	[ /^Paket entfernen \((\d+) Router\)$/, (m, n) => 'Remove package (' + n + (n === '1' ? ' router)' : ' routers)') ],
 	[ /^Paket von (\d+) Routern entfernt$/, 'Package removed from $1 routers' ],
 	[ /^„phantom-rights“ wird von (\d+) (Router|Routern) entfernt\.$/, (m, n) => '“phantom-rights” will be removed from ' + n + (n === '1' ? ' router.' : ' routers.') ],

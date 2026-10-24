@@ -235,21 +235,28 @@ const Net = {
 		const name = (mac, fb) => { const d = this.devices.find((x) => x.mac === mac); return (d && d.name !== d.mac && d.name) || fb || mac; };
 		const bandOfIf = (cudy, ifname) => { const w = (((this.info[cudy] || {}).wifi) || []).find((x) => x.ifname === ifname); return w ? w.band : ''; };
 		const cname = (id) => (this.byId(id) || {}).name || '?';
-		// Router-Wechsel erkennen: „getrennt“ und „verbunden“ desselben Geräts innerhalb einer Minute = nur gewechselt, nicht offline
-		const ROAM = 60000, used = new Set(), out = [];
+		/* Router-Wechsel erkennen – pro Gerät der Reihe nach, über alle Router hinweg:
+		   - „verbunden“ an einem anderen Funk, solange die alte Verbindung noch besteht (oder erst kurz getrennt ist) = Wechsel.
+		     Mesh-Geräte verbinden sich oft erst neu, und der alte Router meldet „getrennt“ erst Minuten später (Inaktivität).
+		   - „getrennt“ von einem Router, an dem das Gerät gar nicht mehr hängt = nur Aufräumen nach dem Wechsel, kein Eintrag.
+		   - kurz getrennt und am selben Funk wieder da = kein Eintrag. */
+		const GRACE = 120000, used = new Set(), out = [], cur = {};
+		const where = (e) => e.cudy + '|' + e.ifname;
 		for (let i = 0; i < all.length; i++) {
 			const e = all[i];
-			if (used.has(i) || (e.kind !== 'connect' && e.kind !== 'disconnect')) continue;
-			const want = e.kind === 'connect' ? 'disconnect' : 'connect';
-			let j = -1;
-			for (let k = i + 1; k < all.length && all[k].ts - e.ts <= ROAM; k++) if (!used.has(k) && all[k].mac === e.mac && all[k].kind === want) { j = k; break; }
-			if (j < 0) continue;
-			used.add(i); used.add(j);
-			const con = e.kind === 'connect' ? e : all[j], dis = e.kind === 'connect' ? all[j] : e;
-			if (con.cudy === dis.cudy && con.ifname === dis.ifname) continue;   // kurz neu verbunden am selben Router: kein Eintrag
-			const b = bandOfIf(con.cudy, con.ifname);
-			out.push({ ts: Math.max(con.ts, dis.ts), kind: 'roam', mac: e.mac,
-				text: name(e.mac) + (con.cudy === dis.cudy ? ' wechselt auf ' + (b || 'anderes Band') + ' (' + cname(con.cudy) + ')' : ' wechselt von ' + cname(dis.cudy) + ' zu ' + cname(con.cudy) + (b ? ' (' + b + ')' : '')) });
+			if (e.kind !== 'connect' && e.kind !== 'disconnect') continue;
+			const c = cur[e.mac];
+			if (e.kind === 'connect') {
+				const live = c && (c.end == null || e.ts - c.end <= GRACE);
+				if (live && where(c.e) !== where(e)) {
+					used.add(i); if (c.endIdx != null) used.add(c.endIdx);
+					const b = bandOfIf(e.cudy, e.ifname);
+					out.push({ ts: e.ts, kind: 'roam', mac: e.mac,
+						text: name(e.mac) + (c.e.cudy === e.cudy ? ' wechselt auf ' + (b || 'anderes Band') + ' (' + cname(e.cudy) + ')' : ' wechselt von ' + cname(c.e.cudy) + ' zu ' + cname(e.cudy) + (b ? ' (' + b + ')' : '')) });
+				} else if (live && c.end != null) { used.add(i); used.add(c.endIdx); }   // kurz weg, gleicher Funk
+				cur[e.mac] = { e, end: null, endIdx: null };
+			} else if (c && where(c.e) !== where(e)) used.add(i);   // alter Router räumt nach dem Wechsel auf
+			else if (c) { c.end = e.ts; c.endIdx = i; }
 		}
 		// IP-Vergabe: pro Gerät und Adresse nur der letzte Eintrag (Verlängerungen nicht wiederholen)
 		const lastDhcp = {};
