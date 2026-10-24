@@ -8,16 +8,18 @@ The app talks directly to your routers through the same interface the OpenWrt we
 
 ![Overview, devices, family profile and mesh network](docs/screenshots/preview-1.png)
 
-![Wi-Fi channels, firewall and router packages](docs/screenshots/preview-2.png)
+![Wi-Fi channels, firewall, router packages and custom pause time](docs/screenshots/preview-2.png)
 
 ## Features
 
 - **Overview** – internet status, devices online, today's data usage, recent events
-- **Devices** – rename, set the device type, pause internet (30 min, 1 h, until 7 am, …), prioritize, fixed IP, data per day and month
+- **Devices** – grouped by network (any number of networks and VLANs, each with its own tile and color); rename, set the device type, pause internet (30 min, 1 h, until 7 am or any custom duration / time of day), prioritize, fixed IP, data per day and month
 - **Family** – group devices into profiles; pause a whole profile, bedtime/homework schedules, daily time limit with weekend limit and one‑tap bonus time
 - **Network** – mesh map, Wi‑Fi networks on all routers, guest Wi‑Fi with QR code and timer, night mode, speed test, ping/traceroute, Wi‑Fi channel scan and automatic channel planning
 - **Firewall** – read‑only view of port forwards, rules and zones
 - **Routers** – system info, ports, firmware update check (newer release in the same OpenWrt branch), backups to a folder of your choice, restart
+- **Router packages** – install or remove the permission package (per router or on all at once) and the daily limit counter, no SSH needed
+- **Device log** – connections, roaming between routers and bands, new devices and IP assignments from all routers
 - **VPN** – WireGuard server on the master: create phone access with QR code, switch the tunnel on this phone
 - **Notifications** – background check about every 15 minutes: new devices, errors, routers offline, firmware updates, daily limit reached (with “+30 min” action)
 - **Security** – HTTPS by default with certificate pinning on first use, optional app login with password and fingerprint
