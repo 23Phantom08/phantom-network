@@ -99,6 +99,8 @@ public class PhantomCheckWorker extends Worker {
         setupPins(cfg);
         String pw = readSecret(ctx, cfg.getString("secretKey", ""));
         if (url.isEmpty() || pw == null) return;
+        // Router-Login über unverschlüsseltes http nur im WLAN/LAN oder per VPN – nie über mobile Daten
+        if (url.startsWith("http://") && !homeNetwork(ctx)) return;
         List<String> kinds = jsonList(cfg.getString("kinds", "[]"));
         SharedPreferences st = ctx.getSharedPreferences(STATE, Context.MODE_PRIVATE);
         List<String[]> notes = new ArrayList<>();   // {art, text}
@@ -406,6 +408,19 @@ public class PhantomCheckWorker extends Worker {
     private static int[] fwParse(String v) {
         java.util.regex.Matcher m = Pattern.compile("^(\\d+)\\.(\\d+)\\.(\\d+)$").matcher(v == null ? "" : v);
         return m.matches() ? new int[] { Integer.parseInt(m.group(1)), Integer.parseInt(m.group(2)), Integer.parseInt(m.group(3)) } : null;
+    }
+
+    /** aktive Verbindung ist WLAN, LAN oder VPN (nicht Mobilfunk) */
+    private static boolean homeNetwork(Context ctx) {
+        try {
+            android.net.ConnectivityManager cm = (android.net.ConnectivityManager) ctx.getSystemService(Context.CONNECTIVITY_SERVICE);
+            android.net.NetworkCapabilities nc = cm.getNetworkCapabilities(cm.getActiveNetwork());
+            return nc != null && (nc.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI)
+                    || nc.hasTransport(android.net.NetworkCapabilities.TRANSPORT_ETHERNET)
+                    || nc.hasTransport(android.net.NetworkCapabilities.TRANSPORT_VPN));
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /** öffentliche Adresse mit normaler Zertifikatsprüfung (nicht die Router-Pins) */

@@ -71,7 +71,7 @@ const S = {
 	speed: null,
 	check: { host: 'google.de', out: '', busy: false },
 	busy: {},
-	useMode: {}, inetAll: false,
+	useMode: {}, useSel: {}, inetAll: false,
 	scroll: {}
 };
 
@@ -667,22 +667,106 @@ VIEWS.device = (v) => {
 	if (btns.length) body += `<div class="ph-btnrow">${btns.join('')}</div>`;
 	return { title: d.name, sub: d.online ? 'Online' : 'Offline', body };
 };
-/* Verbrauch: Monat (Tage) oder letzte Monate – für ein Gerät (mac) oder alle (null) */
+/* Verbrauch: Monat (Kennzahlen + letzte 10 Tage) oder letzte Monate – für ein Gerät (mac) oder alle (null) */
+const WD_SHORT = [ 'So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa' ];
+const gbNum = (b) => { const g = (Number(b) || 0) / 1073741824; return (g >= 100 ? String(Math.round(g)) : g.toFixed(g >= 1 ? 1 : 2)).replace('.', ','); };
+const ymdOf = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 function usageCard(key, mac) {
 	const mode = S.useMode[key] || 'month';
-	const seg = `<div class="ph-seg">${[ [ 'month', MONTH_DE[Number(Net.limitDay().slice(5, 7)) - 1] ], [ 'year', 'Letzte Monate' ] ].map(([ k, l ]) => `<button class="${mode === k ? 'on' : ''}" data-a="useMode" data-x="${key}|${k}">${l}</button>`).join('')}</div>`;
-	let chart, head, total;
-	if (mode === 'month') {
-		const days = Net.monthDays(mac);
-		total = days.reduce((a, x) => a + x.bytes, 0); head = MONTH_DE[Number(Net.limitDay().slice(5, 7)) - 1] + ' bis heute';
-		chart = barChart(days.map((x) => { const n = Number(x.day.slice(8)); return { v: x.bytes, cls: x.today ? 'now' : '', label: n === 1 || n % 5 === 0 || x.today ? String(n) : '' }; }), true);
-	} else {
+	const today = Net.limitDay(), mon = today.slice(0, 7);
+	const y = +today.slice(0, 4), m = +today.slice(5, 7) - 1, t = +today.slice(8, 10);
+	const dIn = new Date(y, m + 1, 0).getDate();
+	const seg = `<div class="ph-seg">${[ [ 'month', MONTH_DE[m] ], [ 'year', 'Letzte Monate' ] ].map(([ k, l ]) => `<button class="${mode === k ? 'on' : ''}" data-a="useMode" data-x="${key}|${k}">${l}</button>`).join('')}</div>`;
+	const days = Net.monthDays(mac);                       // dieser Monat, heute zuletzt
+	const total = days.reduce((a, x) => a + x.bytes, 0);
+	const full = days.filter((x) => !x.today);
+	const avg = full.length ? full.reduce((a, x) => a + x.bytes, 0) / full.length : (days.length ? days[days.length - 1].bytes : 0);
+	const legend = (items) => `<div class="ph-ulegend">${items.join('')}</div>`;
+	const avgLine = (bottom) => `<div class="ph-uavg" style="bottom:${bottom}px"></div>`;
+	if (mode === 'year') {
 		const ms = Net.monthsOf(mac);
-		total = Math.round(ms.reduce((a, x) => a + x.bytes, 0) / ms.length); head = 'Durchschnitt pro Monat';
-		chart = barChart(ms.map((x) => ({ v: x.bytes, val: fmtBytes(x.bytes).replace(/,\d+ /, ' '), label: MON_DE[Number(x.month.slice(5, 7)) - 1], cls: x.now ? 'now' : '' })));
+		const cur = ms[ms.length - 1];
+		const proj = cur.bytes + avg * (dIn - t);
+		const past = ms.filter((x) => !x.now && x.bytes > 0);
+		const pAvg = past.length ? past.reduce((a, x) => a + x.bytes, 0) / past.length : 0;
+		const shown = ms.filter((x) => x.now || x.bytes > 0);
+		const max = Math.max(1, pAvg, ...shown.map((x) => x.now ? Math.max(x.bytes, proj) : x.bytes));
+		const H = 110;
+		const bars = shown.map((x) => {
+			const h = Math.max(4, Math.round(H * x.bytes / max)), ph = x.now ? Math.max(0, Math.round(H * (proj - x.bytes) / max)) : 0;
+			return `<div class="ph-ubar"><b class="mono">${gbNum(x.bytes)}</b>${ph ? `<i class="proj" style="height:${ph}px"></i>` : ''}<i class="${x.now ? 'now' : ''}${ph ? ' joined' : ''}" style="height:${h}px"></i><small>${MON_DE[Number(x.month.slice(5, 7)) - 1]}</small></div>`;
+		}).join('');
+		return `<div class="ph-card pad ph-use">${seg}
+			<div class="ph-uhero"><div><b class="mono">${pAvg ? fmtBytes(pAvg) : '–'}</b><span>Durchschnitt pro Monat</span></div><span class="ph-uchip">${past.length ? past.length + (past.length === 1 ? ' voller Monat' : ' volle Monate') : 'Noch kein voller Monat'}</span></div>
+			<div class="ph-hrow"><span>Monate</span><small>Werte in GB</small></div>
+			<div class="ph-uchart months">${bars}${pAvg ? avgLine(18 + Math.round(H * pAvg / max)) : ''}</div>
+			${legend([ '<span><i class="avg"></i>Ø pro Monat</span>', `<span><i class="now"></i>${MONTH_DE[m]} bis heute</span>`, '<span><i class="proj"></i>Hochrechnung</span>' ])}
+			<div class="ph-hint">Bis zu 12 Monate, gespeichert auf dem Master.</div></div>`;
 	}
-	return `<div class="ph-card pad">${seg}<div class="ph-hrow"><span>${head}</span><b class="mono">${fmtBytes(total)}</b></div>${chart}
-		<div class="ph-hint">${mode === 'month' ? 'Ein Balken pro Tag, heute in Türkis.' : 'Bis zu 12 Monate, gespeichert auf dem Master.'}</div></div>`;
+	// Kennzahlen für den ganzen Monat
+	let peak = null;
+	for (const x of days) if (!peak || x.bytes > peak.bytes) peak = x;
+	const proj = total + avg * (dIn - t);
+	const prevKey = m === 0 ? (y - 1) + '-12' : y + '-' + String(m).padStart(2, '0');
+	const prev = (Net.week.months || []).find((x) => x.month === prevKey);
+	const prevBytes = prev ? Net.sumMacs(prev.macs, mac) : 0;
+	const prevAvg = prevBytes / new Date(y, m, 0).getDate();
+	let chip = '<span class="ph-uchip">Vergleich ab nächstem Monat</span>';
+	if (prevBytes > 0 && avg > 0) {
+		const p = Math.round((avg / prevAvg - 1) * 100);
+		chip = `<span class="ph-uchip ${p >= 0 ? 'up' : 'down'}">${p >= 0 ? '▲' : '▼'} ${Math.abs(p)} % pro Tag ggü. ${MONTH_DE[(m + 11) % 12]}</span>`;
+	}
+	const dayName = (ds) => { const d = new Date(+ds.slice(0, 4), +ds.slice(5, 7) - 1, +ds.slice(8, 10)); return WD_SHORT[d.getDay()] + ' ' + d.getDate() + '.' + (d.getMonth() + 1) + '.'; };
+	// letzte 10 Tage (auch über den Monatswechsel)
+	const byDay = {};
+	for (const x of Net.week.days || []) byDay[x.day] = Net.sumMacs(x.macs, mac);
+	byDay[today] = Net.sumMacs(Net.today.macs, mac);
+	const list = [];
+	for (let i = 9; i >= 0; i--) {
+		const d = new Date(y, m, t - i), ds = ymdOf(d);
+		list.push({ d, ds, v: ds in byDay ? byDay[ds] : null, today: i === 0 });
+	}
+	const H = 100, max = Math.max(1, avg, ...list.map((x) => x.v || 0));
+	const peakDay = full.length > 1 && peak ? peak.day : '';
+	const sel = list.find((x) => x.ds === S.useSel[key]) || list[list.length - 1];
+	const bars = list.map((x) => {
+		const has = x.v != null;
+		const cls = !has ? 'none' : x.today ? 'now' : x.ds === peakDay ? 'peak' : '';
+		const h = has ? Math.max(4, Math.round(H * x.v / max)) : 3;
+		return `<button class="ph-ubar${x === sel ? ' sel' : ''}" data-a="useSel" data-x="${key}|${x.ds}"><b class="mono">${has ? gbNum(x.v) : '–'}</b><i class="${cls}" style="height:${h}px"></i><small>${WD_SHORT[x.d.getDay()]}</small><small>${x.d.getDate()}<span>.</span></small></button>`;
+	}).join('');
+	let det;
+	if (sel.v == null) det = `<div class="ph-udetail"><span>${dayName(sel.ds)}</span><small>keine Daten – Messung lief da noch nicht</small></div>`;
+	else {
+		const p = avg ? Math.round((sel.v / avg - 1) * 100) : 0;
+		det = `<div class="ph-udetail"><span>${dayName(sel.ds)}${sel.today ? ' · heute' : ''}</span><span><b class="mono">${fmtBytes(sel.v)}</b> <small>${sel.today ? 'bisher' : p >= 0 ? p + ' % über Ø' : Math.abs(p) + ' % unter Ø'}</small></span></div>`;
+	}
+	const firstDay = days.length ? +days[0].day.slice(8, 10) : 1;
+	return `<div class="ph-card pad ph-use">${seg}
+		<div class="ph-uhero"><div><b class="mono">${fmtBytes(total)}</b><span>${MONTH_DE[m]} bis heute</span></div>${chip}</div>
+		<div class="ph-ustats">
+			<div><small>Ø pro Tag</small><b class="mono">${fmtBytes(avg)}</b><em>${full.length} ${full.length === 1 ? 'voller Tag' : 'volle Tage'}</em></div>
+			<div><small>Spitzentag</small><b class="mono">${peak ? fmtBytes(peak.bytes) : '–'}</b><em>${peak ? dayName(peak.day) : '–'}</em></div>
+			<div><small>Hochrechnung</small><b class="mono">≈ ${fmtBytes(proj).replace(/,\d+ /, ' ')}</b><em>bis ${dIn}.${m + 1}.</em></div>
+		</div>
+		<div class="ph-hrow"><span>Letzte 10 Tage</span><small>Werte in GB</small></div>
+		<div class="ph-uchart">${bars}${avg > 0 ? avgLine(34 + Math.round(H * avg / max)) : ''}</div>
+		${det}
+		${legend([ '<span><i class="avg"></i>Ø pro Tag</span>', '<span><i class="now"></i>heute</span>', '<span><i class="peak"></i>Spitzentag</span>', '<span><i></i>andere Tage</span>' ])}
+		${firstDay > 1 && full.length + 1 === days.length && firstDay <= t ? `<div class="ph-hint">Gemessen wird seit ${firstDay}.${m + 1}. – davor gibt es keine Werte.</div>` : ''}</div>`;
+}
+/* größte Verbraucher im laufenden Monat */
+function topUsersCard() {
+	const by = Net.usageByMac(true);
+	const names = {};
+	for (const d of Net.devices) names[d.mac.toLowerCase()] = d;
+	const list = Object.entries(by).filter(([ , b ]) => b > 0).sort((a, b) => b[1] - a[1]);
+	const shown = S.inetAll ? list : list.slice(0, 5);
+	const max = list.length ? list[0][1] : 1, tot = list.reduce((a, x) => a + x[1], 0);
+	return `<div class="ph-card pad"><div class="ph-h">GRÖSSTE VERBRAUCHER IM ${MONTH_DE[Number(Net.limitDay().slice(5, 7)) - 1].toUpperCase()}</div>
+		<div class="ph-ulist">${shown.map(([ mm, b ]) => { const d = names[mm]; return `<button class="ph-urow" ${d ? `data-a="dev" data-x="${d.id}"` : ''}><span>${esc(d ? d.name : mm.toUpperCase())}</span><b class="mono">${fmtBytes(b)} <small>${tot ? Math.round(100 * b / tot) : 0} %</small></b><i style="width:${Math.max(2, Math.round(100 * b / max))}%"></i></button>`; }).join('') || '<div class="ph-dim">Noch keine Daten</div>'}</div>
+		${list.length > 5 ? `<button class="ph-btn small" data-a="inetAll" style="align-self:center;background:transparent;border:0;color:var(--cyan)">${S.inetAll ? 'Weniger zeigen' : 'Alle ' + list.length + ' Geräte zeigen'}</button>` : ''}
+		<div class="ph-hint">Antippen öffnet das Gerät mit seinem eigenen Verlauf.</div></div>`;
 }
 
 function weekLabel(day) {
@@ -967,21 +1051,9 @@ VIEWS.inet = () => {
 			${pfx.length ? kvb('IPv6-Präfix (fürs Heimnetz)', pfx.map(mono).join('<br>')) : ''}
 		</div>`;
 		if (Net.agentVer()) {
-			const mode = S.useMode.inet || 'day';
-			const by = Net.usageByMac(mode === 'year');
-			const names = {};
-			for (const d of Net.devices) names[d.mac.toLowerCase()] = d;
-			const list = Object.entries(by).filter(([ , b ]) => b > 0).sort((a, b) => b[1] - a[1]);
-			const shown = S.inetAll ? list : list.slice(0, 5);
-			const max = list.length ? list[0][1] : 1;
-			const tot = list.reduce((a, x) => a + x[1], 0);
-			body += `<div class="ph-card pad"><div class="ph-hrow"><div class="ph-h">DATENVERBRAUCH</div><small>alle Geräte</small></div>
-				<div class="ph-seg">${[ [ 'day', 'Heute' ], [ 'year', 'Monate' ] ].map(([ k, l ]) => `<button class="${mode === k ? 'on' : ''}" data-a="useMode" data-x="inet|${k}">${l}</button>`).join('')}</div>
-				<div class="ph-big"><b class="mono">${fmtBytes(tot)}</b><span>${mode === 'day' ? 'heute' : 'im ' + MONTH_DE[Number(Net.limitDay().slice(5, 7)) - 1] + ' bis heute'}</span></div>
-				${mode === 'year' ? barChart(Net.monthsOf(null).map((x) => ({ v: x.bytes, val: fmtBytes(x.bytes).replace(/,\d+ /, ' '), label: MON_DE[Number(x.month.slice(5, 7)) - 1], cls: x.now ? 'now' : '' }))) : ''}
-				<div class="ph-ulist">${shown.map(([ m, b ]) => { const d = names[m]; return `<button class="ph-urow" ${d ? `data-a="dev" data-x="${d.id}"` : ''}><span>${esc(d ? d.name : m.toUpperCase())}</span><b class="mono">${fmtBytes(b)}</b><i style="width:${Math.max(2, Math.round(100 * b / max))}%"></i></button>`; }).join('') || '<div class="ph-dim">Noch keine Daten</div>'}</div>
-				${list.length > 5 ? `<button class="ph-btn small" data-a="inetAll" style="align-self:center;background:transparent;border:0;color:var(--cyan)">${S.inetAll ? 'Weniger zeigen' : 'Alle ' + list.length + ' Geräte zeigen'}</button>` : ''}
-				<div class="ph-hint">Gezählt vom Tageslimit-Zähler auf dem Master, jede Minute.</div></div>`;
+			body += `<div class="ph-hrow" style="padding:4px 4px 0"><div class="ph-h">DATENVERBRAUCH · ALLE GERÄTE</div></div>`;
+			body += usageCard('all', null);
+			body += topUsersCard();
 		}
 		if (ws) {
 			const err = (ws.rx_errors || 0) + (ws.tx_errors || 0), drop = (ws.rx_dropped || 0) + (ws.tx_dropped || 0);
@@ -1683,6 +1755,7 @@ A.limitWeOn = (x) => { const p = Net.profiles().find((q) => q.id === x); if (!p)
 A.bonus = (x) => { const [ id, m ] = x.split('|'); act('bonus' + id + m, () => Net.giveBonus(id, Number(m)), '+' + fmtMin(Number(m)).trim() + ' für heute – gleich wieder online'); };
 A.bonusUndo = (x) => act('bonusUndo', () => Net.undoBonus(x), 'Bonus zurückgenommen');
 A.useMode = (x) => { const [ k, m ] = x.split('|'); S.useMode[k] = m; renderSoft(); };
+A.useSel = (x) => { const [ k, d ] = x.split('|'); S.useSel[k] = d; renderSoft(); };
 A.inetAll = () => { S.inetAll = !S.inetAll; renderSoft(); };
 A.limit = (x) => { const [ id, m ] = x.split('|'); act('limit', () => Net.setLimit(id, Number(m)), Number(m) ? 'Limit: ' + fmtMin(Number(m)) : 'Limit aus'); };
 A.assignSheet = (x) => {
