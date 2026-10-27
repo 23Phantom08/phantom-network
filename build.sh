@@ -95,6 +95,8 @@ $BT/apksigner sign --ks "$KS" --ks-key-alias phantom --ks-pass "pass:$PW" --key-
 $BT/apksigner verify "$OUT"
 cp -f "$OUT" $W/out/
 cp -f "$OUT" $W/out/PhantomNetwork-latest.apk
+# keep only the 3 newest versions in out/, delete older ones automatically
+ls -1t $W/out/PhantomNetwork-*-*.apk 2>/dev/null | tail -n +4 | xargs -r rm -f
 rm -f /tmp/aligned.apk
 
 log "DONE"
