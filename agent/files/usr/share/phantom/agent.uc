@@ -13,13 +13,16 @@
 //  - um Mitternacht: Zähler auf null, Limit-Sperren wieder aus
 //  - wird ein Gerät pausiert (App, Zeitplan, Limit), trennt der Agent
 //    zusätzlich dessen laufende Verbindungen – so wirkt die Pause sofort
+//  - merkt sich je Gerät, wann es zuletzt erreichbar war (Nachbartabelle des
+//    Kernels, IPv4 und IPv6, plus Datenverkehr) – daraus zeigt die App „online“
+//    auch für Geräte per Kabel hinter einem Access Point
 'use strict';
 
 import * as fs from 'fs';
 import * as uloop from 'uloop';
 import { cursor } from 'uci';
 
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 
 // Nur für Tests: Eingaben aus Dateien statt aus dem Kernel
 const TEST = getenv('PHANTOM_TEST');
@@ -235,6 +238,7 @@ let blocked = null;       // gesperrte Geräte beim letzten Durchlauf
 let saved_at = 0, dirty = false;
 let recut = {};           // neu gesperrt: beim nächsten Durchlauf noch einmal trennen
 let last_dst = null;      // Sommer-/Winterzeit
+let seen = {};            // MAC → Zeitpunkt, an dem das Gerät zuletzt erreichbar war
 
 function fresh(day) { return { day, bytes: {}, mmin: {}, prof: {}, lim: {} }; }
 
@@ -277,6 +281,31 @@ function new_day(day, ctx, all) {
 		}
 	if (lim) { ctx.commit('firewall'); fw_reload(); event('limit', 'Neuer Tag: Tageslimits zurückgesetzt'); }
 	return lim;
+}
+
+/* ---------- Erreichbarkeit: wer ist gerade im Heimnetz? ----------
+   Der Kernel hält für jede Adresse einen Zustand: REACHABLE/DELAY/PROBE = kürzlich bestätigt.
+   STALE heißt nur „früher mal gesehen“ – auch ausgeschaltete Geräte bleiben so stehen.
+   Deshalb fragt der Agent STALE-Adressen im Heimnetz (br-*) einmal pro Minute kurz an;
+   antwortet das Gerät, ist es beim nächsten Durchlauf REACHABLE, sonst FAILED. */
+function check_seen(active_macs) {
+	const t = now();
+	const ask = [];
+	for (let l in split(sh('ip neigh show'), '\n')) {
+		const m = match(l, /^(\S+) dev (\S+) lladdr ([0-9a-fA-F:]{17})(.*)$/);
+		if (!m) continue;
+		const mac = lc(m[3]);
+		if (mac == NOMAC) continue;
+		if (match(m[4], /REACHABLE|DELAY|PROBE|PERMANENT/)) seen[mac] = t;
+		else if (match(m[4], /STALE/) && match(m[2], /^br-/) && match(m[1], /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/) && length(ask) < 128)
+			push(ask, m[1]);
+	}
+	for (let mac in keys(active_macs)) seen[mac] = t;
+	// Anfragen parallel, je höchstens 1 s – die Antwort sieht der nächste Durchlauf
+	if (length(ask) && !TEST)
+		sh('for ip in ' + join(' ', ask) + '; do ping -c 1 -W 1 -q $ip >/dev/null 2>&1 & done; wait');
+	// nach einem Tag ohne Lebenszeichen vergessen
+	for (let mac in filter(keys(seen), (k) => t - seen[k] > 86400)) delete seen[mac];
 }
 
 /* ---------- jede Minute: zählen und Limits prüfen ---------- */
@@ -377,7 +406,8 @@ function count_minute() {
 	if (changed) { ctx.commit('firewall'); fw_reload(); dirty = true; save(true); }
 	for (let t in reached) event('limit', t);
 
-	writejson(TODAY, { ver: VERSION, day: st.day, updated: now(), min_bytes: minb, macs: st.bytes, mmin: st.mmin, minutes: st.prof, profiles: profs });
+	check_seen(delta);
+	writejson(TODAY, { ver: VERSION, day: st.day, updated: now(), min_bytes: minb, macs: st.bytes, mmin: st.mmin, minutes: st.prof, profiles: profs, seen });
 	save(false);
 	return { ctx, neigh };
 }

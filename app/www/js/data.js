@@ -364,17 +364,30 @@ const Net = {
 		const now = new Date();
 		const pauseUntil = (r) => (r && r.phantom_until ? Number(r.phantom_until) * 1000 : null) || this.cronAt(this.master, 'pause_' + (r && r['.name'] || '').slice(6));
 		const list = [];
+		// Kabel-Geräte: Ab Agent 1.2 meldet der Master, wann ein Gerät zuletzt wirklich erreichbar war
+		// (Nachbartabelle IPv4/IPv6 + Datenverkehr). Die ARP-Tabelle allein behält auch ausgeschaltete
+		// Geräte und kennt Geräte nicht, die nur über IPv6 reden.
+		const tdy = this.today || {};
+		const seen = tdy.seen && tdy.updated && Date.now() / 1000 - tdy.updated < 300 ? tdy.seen : null;
 		for (const d of Object.values(map)) {
-			if (!d.wifi && d.wired) { d.online = true; d.band = 'Kabel'; }
+			if (!d.wifi) {
+				if (seen) { const t = seen[d.mac.toLowerCase()]; if (t && tdy.updated - t <= 180) { d.online = true; d.band = 'Kabel'; } }
+				else if (d.wired) { d.online = true; d.band = 'Kabel'; }
+			}
 			// Ersatz ohne ARP-Rechte: aktiver Lease zählt – aber nicht bei Handys/Uhren/Tablets (sonst noch Stunden nach dem Gehen „online“)
 			if (!d.online && d.leaseOnly) {
 				const ts = (this.phantom || {})['d_' + macId(d.mac)];
 				const t = (ts && ts.type) || guessType(d.name, this.netOf(d.ip));
 				if (!/^(phone|watch|tablet)$/.test(t)) { d.online = true; d.band = 'Kabel'; }
 			}
-			// Router selbst: online, wenn die App sie gerade erreicht (auch ohne Zugriff auf die ARP-Tabelle)
-			const cudy = !d.wifi && this.routers.find((r) => r.host === d.ip && this.info[r.id] && this.info[r.id].ok);
-			if (cudy) { d.online = true; d.band = 'Kabel'; d.isCudy = true; }
+			// Router selbst: online genau dann, wenn die App ihn gerade erreicht (ein ausgeschalteter
+			// Access Point steht sonst noch lange in der ARP-Tabelle)
+			const rtr = !d.wifi && this.routers.find((r) => r.host === d.ip);
+			if (rtr) {
+				const ok = !!(this.info[rtr.id] && this.info[rtr.id].ok);
+				d.online = ok; d.isCudy = true;
+				if (ok) d.band = 'Kabel';
+			}
 			if (!d.name) d.name = d.mac;
 			d.id = macId(d.mac);
 			d.net = this.netOf(d.ip);
@@ -835,7 +848,7 @@ const Net = {
 	   Installation wie „Paket hochladen“ in der Weboberfläche: Paket nach /tmp/upload.apk,
 	   dann die Paketverwaltung des Routers. Das Paket ist mit eigenem Schlüssel signiert;
 	   der öffentliche Schlüssel liegt nur während der Installation auf dem Router. */
-	AGENT_VER: '1.1.0',
+	AGENT_VER: '1.2.0',
 	agentVer() { return (this.today && this.today.ver) || ''; },
 	agentOld() {
 		const a = fwParse(this.agentVer()), b = fwParse(this.AGENT_VER);

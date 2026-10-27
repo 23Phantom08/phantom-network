@@ -12,6 +12,7 @@ or the master's router page). This folder holds its source.
 - counts every minute in which a device noticeably uses data (per MAC) and the data volume per day and month
 - enforces daily limits (with weekend limit and bonus time) via the app's firewall rules
 - cuts running connections of a device as soon as it gets blocked (pause, profile pause, schedule or limit) – about every 15 seconds
+- notes when each device was last reachable (kernel neighbour table for IPv4 and IPv6, plus its traffic); stale addresses in the home network get a short ping once a minute, so devices that were switched off drop out and wired devices behind an access point show up correctly
 - keeps 35 days of daily values and 12 months of monthly totals in `/etc/phantom/`
 
 ## Contents
