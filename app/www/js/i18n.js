@@ -144,6 +144,8 @@ const EN = {
 	'voller Monat': "full month", 'Noch kein voller Monat': "No full month yet", 'Vergleich ab nächstem Monat': "Comparison from next month",
 	'pro Tag ggü.': "per day vs.", 'bis': "until", 'über Ø': "above avg", 'unter Ø': "below avg", 'bisher': "so far", 'andere Tage': "other days",
 	'keine Daten – Messung lief da noch nicht': "no data – not measured yet", 'Gemessen wird seit': "Measured since", 'davor gibt es keine Werte.': "no values before that.",
+	'Update für den Tageslimit-Zähler': "Update for the daily limit counter", 'Jetzt installieren': "Install now", 'Tageslimit-Zähler aktualisiert': "Daily limit counter updated",
+	'erkennt Geräte am Kabel hinter Access Points und ausgeschaltete Geräte zuverlässiger.': "detects wired devices behind access points and switched-off devices more reliably.",
 	'DATENVERBRAUCH · ALLE GERÄTE': "DATA USAGE · ALL DEVICES", 'GRÖSSTE VERBRAUCHER IM': "TOP USERS IN",
 	'Antippen öffnet das Gerät mit seinem eigenen Verlauf.': "Tap to open the device with its own history.",
 	'JANUAR': "JANUARY", 'FEBRUAR': "FEBRUARY", 'MÄRZ': "MARCH", 'APRIL': "APRIL", 'MAI': "MAY", 'JUNI': "JUNE", 'JULI': "JULY",
@@ -342,6 +344,9 @@ const EN_EXACT = new Set([ 'bis', 'Paket', 'ROUTER', 'von', 'aktiv', 'Uhr', 'Art
 
 /* Texte mit Zahlen: [Muster, Ersatz] – greifen vor den Textstücken */
 const EN_RX = [
+	[ /^Auf dem (.+) läuft jetzt Version$/, '$1 now runs version' ],
+	[ /^Auf dem (.+) läuft$/, '$1 runs' ],
+	[ /^, neu ist$/, ', new is' ],
 	[ /^Offline für (.+) – bis (heute|morgen) (\d\d:\d\d)$/, (m, d, w, t) => 'Offline for ' + d.replace(/(\d+) Std/, '$1 h').replace(/(\d+) Min/, '$1 min') + ' – until ' + (w === 'heute' ? 'today ' : 'tomorrow ') + t ],
 	[ /^Offline bis (heute|morgen) (\d\d:\d\d)$/, (m, w, t) => 'Offline until ' + (w === 'heute' ? 'today ' : 'tomorrow ') + t ],
 	[ /^(.+) pausiert bis (\d\d:\d\d)$/, '$1 paused until $2' ],

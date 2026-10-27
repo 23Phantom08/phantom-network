@@ -483,6 +483,14 @@ VIEWS.home = () => {
 	const fwUp = Net.routers.filter((r) => Net.fwUpdate(r));
 	if (!S.lock.on && !S.lock.asked) body += `<div class="ph-banner info"><div class="ph-line">${icon('lock', 22, 'var(--cyan)')}<div style="flex:1"><b>Neu: App-Login</b><small>Benutzername &amp; Passwort${S.bioOk ? ' oder Fingerabdruck' : ''}, bevor die App deine Router anspricht.</small></div></div>
 		<div class="ph-grid2"><button class="ph-btn small primary" data-a="push" data-x="lockSetup">Einrichten</button><button class="ph-btn small" data-a="lockLater">Später</button></div></div>`;
+	// Update für den Tageslimit-Zähler: nur wenn auf dem Master eine ältere Version läuft
+	if (Net.agentOld() && !S.agentLater) {
+		const mName = esc(Net.master.name || 'Master');
+		body += `<div class="ph-banner info"><div class="ph-line">${icon('refresh', 22, 'var(--cyan)')}<div style="flex:1"><b>Update für den Tageslimit-Zähler</b><small>Auf dem ${mName} läuft <span class="mono">${esc(Net.agentVer())}</span>, neu ist <span class="mono">${esc(Net.AGENT_VER)}</span>: ${esc(Net.AGENT_NEWS)}</small></div></div>
+			<div class="ph-grid2"><button class="ph-btn small primary" data-a="agentUpdate">${spinOr('agent', 'Jetzt installieren')}</button><button class="ph-btn small" data-a="agentLater">Später</button></div></div>`;
+	} else if (S.agentDone && Date.now() - S.agentDone < 4000) {
+		body += `<div class="ph-banner ok"><div class="ph-line">${icon('check', 22, 'var(--ok)')}<div style="flex:1"><b>Tageslimit-Zähler aktualisiert</b><small>Auf dem ${esc(Net.master.name || 'Master')} läuft jetzt Version <span class="mono">${esc(Net.agentVer() || Net.AGENT_VER)}</span>.</small></div></div></div>`;
+	}
 	if (fwUp.length) body += `<div class="ph-banner info"><div class="ph-line">${icon('refresh', 22, 'var(--cyan)')}<div style="flex:1"><b>Firmware-Update: OpenWrt ${esc(Net.fwUpdate(fwUp[0]))}</b><small>${fwUp.length === 1 ? esc(fwUp[0].name || fwUp[0].host) : fwUp.length + ' Router'} · installieren über die Weboberfläche</small></div></div><button class="ph-btn small" data-a="push" data-x="cudys">Ansehen</button></div>`;
 	if (need.length) body += `<div class="ph-banner warn"><div class="ph-line">${icon('router', 22, 'var(--warn)')}<div style="flex:1"><b>${need.length === 1 ? esc(need[0].name || need[0].host) + (Net.info[need[0].id].needLogin ? ' braucht ein Passwort' : ' antwortet nicht') : need.length + ' Router brauchen Aufmerksamkeit'}</b><small>Daten dieser Router fehlen gerade</small></div></div><button class="ph-btn small" data-a="push" data-x="cudys">Router &amp; Anmeldungen</button></div>`;
 	if (newEv.length) body += `<div class="ph-banner info"><div class="ph-line">${icon('bell', 22, 'var(--cyan)')}<div style="flex:1"><b>${newEv.length === 1 ? 'Neues Gerät im Netz' : newEv.length + ' neue Geräte heute'}</b><small>${esc(newEv[0].text.replace(/^Neues Gerät: /, ''))}</small></div></div><button class="ph-btn small" data-a="push" data-x="log">Ansehen</button></div>`;
@@ -1941,6 +1949,9 @@ A.reboot = (x) => {
 		<button class="ph-btn danger" data-a="rebootYes" data-x="${x}">Neu starten</button><button class="ph-btn" data-a="sheetClose">Abbrechen</button>`);
 };
 A.agentInstall = () => act('agent', () => Net.agentInstall(), 'Tageslimit ist eingerichtet');
+// Hinweis auf der Übersicht: Update direkt installieren bzw. bis zum nächsten Start ausblenden
+A.agentUpdate = () => act('agent', async () => { await Net.agentInstall(); S.agentDone = Date.now(); setTimeout(renderSoft, 4100); });
+A.agentLater = () => { S.agentLater = true; renderSoft(); };
 /* ein einzelner Router */
 const rightsRun = (r, fn, ok) => act('rights', async () => { S.rightsAt = r.id; renderSoft(); try { await fn(r); } finally { S.rightsAt = null; } }, ok);
 A.rightsOne = (x) => { const r = Net.byId(x); if (r) rightsRun(r, (y) => Net.rightsInstall(y), 'Rechte-Paket auf ' + (r.name || r.host) + ' installiert'); };

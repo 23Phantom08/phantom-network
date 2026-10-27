@@ -7,7 +7,7 @@ services:
       - ./:/work
       - phantom-cache:/cache
     environment:
-      - APP_VERSION=1.1.1
+      - APP_VERSION=1.1.2
     command: ["bash", "/work/build.sh"]
     restart: "no"
 

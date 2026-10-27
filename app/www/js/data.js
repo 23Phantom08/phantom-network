@@ -849,6 +849,8 @@ const Net = {
 	   dann die Paketverwaltung des Routers. Das Paket ist mit eigenem Schlüssel signiert;
 	   der öffentliche Schlüssel liegt nur während der Installation auf dem Router. */
 	AGENT_VER: '1.2.0',
+	// was die neue Zähler-Version bringt (Hinweis auf der Übersicht)
+	AGENT_NEWS: 'erkennt Geräte am Kabel hinter Access Points und ausgeschaltete Geräte zuverlässiger.',
 	agentVer() { return (this.today && this.today.ver) || ''; },
 	agentOld() {
 		const a = fwParse(this.agentVer()), b = fwParse(this.AGENT_VER);
