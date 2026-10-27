@@ -10,10 +10,13 @@ The app talks directly to your routers through the same interface the OpenWrt we
 
 ![Wi-Fi channels, firewall, router packages and custom pause time](docs/screenshots/preview-2.png)
 
+![Data usage per device, recent months, all devices and top users](docs/screenshots/preview-3.png)
+
 ## Features
 
 - **Overview** – internet status, devices online, today's data usage, recent events
 - **Devices** – grouped by network (any number of networks and VLANs, each with its own tile and color); rename, set the device type, pause internet (30 min, 1 h, until 7 am or any custom duration / time of day), prioritize, fixed IP, data per day and month
+- **Data usage** – per device and for all devices: total this month, change per day vs. last month, average per day, peak day and projection to month end; the last 10 days with the exact value on every bar, recent months with average line, top users of the month
 - **Family** – group devices into profiles; pause a whole profile, bedtime/homework schedules, daily time limit with weekend limit and one‑tap bonus time
 - **Network** – mesh map, Wi‑Fi networks on all routers, guest Wi‑Fi with QR code and timer, night mode, speed test, ping/traceroute, Wi‑Fi channel scan and automatic channel planning
 - **Firewall** – read‑only view of port forwards, rules and zones
@@ -21,7 +24,7 @@ The app talks directly to your routers through the same interface the OpenWrt we
 - **Router packages** – install or remove the permission package (per router or on all at once) and the daily limit counter, no SSH needed
 - **Device log** – connections, roaming between routers and bands, new devices and IP assignments from all routers
 - **VPN** – WireGuard server on the master: create phone access with QR code, switch the tunnel on this phone
-- **Notifications** – background check about every 15 minutes: new devices, errors, routers offline, firmware updates, daily limit reached (with “+30 min” action)
+- **Notifications** – background check about every 15 minutes (over plain HTTP only on Wi‑Fi, LAN or VPN, never over mobile data): new devices, errors, routers offline, firmware updates, daily limit reached (with “+30 min” action)
 - **Security** – HTTPS by default with certificate pinning on first use, optional app login with password and fingerprint
 
 ## Installation

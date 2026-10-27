@@ -142,7 +142,7 @@ const EN = {
 	'Letzte 10 Tage': "Last 10 days", 'Werte in GB': "Values in GB", 'Ø pro Tag': "Avg per day", 'Ø pro Monat': "Avg per month",
 	'Spitzentag': "Peak day", 'Hochrechnung': "Projection", 'volle Tage': "full days", 'voller Tag': "full day", 'volle Monate': "full months",
 	'voller Monat': "full month", 'Noch kein voller Monat': "No full month yet", 'Vergleich ab nächstem Monat': "Comparison from next month",
-	'pro Tag ggü.': "per day vs.", 'über Ø': "above avg", 'unter Ø': "below avg", 'bisher': "so far", 'andere Tage': "other days",
+	'pro Tag ggü.': "per day vs.", 'bis': "until", 'über Ø': "above avg", 'unter Ø': "below avg", 'bisher': "so far", 'andere Tage': "other days",
 	'keine Daten – Messung lief da noch nicht': "no data – not measured yet", 'Gemessen wird seit': "Measured since", 'davor gibt es keine Werte.': "no values before that.",
 	'DATENVERBRAUCH · ALLE GERÄTE': "DATA USAGE · ALL DEVICES", 'GRÖSSTE VERBRAUCHER IM': "TOP USERS IN",
 	'Antippen öffnet das Gerät mit seinem eigenen Verlauf.': "Tap to open the device with its own history.",
@@ -308,7 +308,7 @@ const EN = {
 	'Router noch ohne HTTPS': "router(s) still without HTTPS", 'Router noch ohne Verschlüsselung': "router(s) still unencrypted",
 	'Der Check liest etwa alle 15 Minuten das Systemprotokoll des Masters – wie das Protokoll in der App. Gemeldet werden Geräte, die zum ersten Mal eine Adresse bekommen, Fehler und kritische Meldungen sowie Router, die nicht mehr antworten. Beim Tageslimit kommt die Vorwarnung, sobald nur noch etwa 20 Minuten übrig sind; ist es erreicht, kannst du direkt in der Mitteilung 30 Minuten dazugeben. Das Passwort bleibt dabei verschlüsselt im Android-Schlüsselspeicher. Manche Handys beenden Hintergrunddienste – dann in den Akku-Einstellungen „Nicht optimieren“ wählen.': "About every 15 minutes the check reads the master's system log – like the log in the app. It reports devices getting an address for the first time, errors and critical messages, and routers that stop responding. For the daily limit, a warning comes when only about 20 minutes are left; once it's reached you can add 30 minutes right from the notification. The password stays encrypted in the Android keystore. Some phones kill background services – then choose “Don't optimize” in the battery settings.",
 	'Phantom Network ist ein privates, nicht kommerzielles Projekt. Die App wird ohne Gewähr bereitgestellt; für Schäden an Geräten oder Einstellungen wird keine Haftung übernommen, soweit gesetzlich zulässig.': "Phantom Network is a private, non-commercial project. The app is provided without warranty; no liability is accepted for damage to devices or settings, to the extent permitted by law.",
-	'Passwort (leer = wie Master)': "Password (empty = same as master)", 'bekannt': "known", 'Typ': "Type", 'Aus WLAN werfen': "Kick off Wi‑Fi", 'genutzt': "used", 'funktioniert': "works", 'gestört': "broken", 'gesehen von': "seen by",
+	'Passwort (leer = wie Master)': "Password (empty = same as master)", 'bekannt': "known", 'Typ': "Type", 'Aus WLAN werfen': "Kick off Wi‑Fi", 'Aufwecken (WoL)': "Wake up (WoL)", 'Internet wieder freigeben': "Allow internet again", 'genutzt': "used", 'funktioniert': "works", 'gestört': "broken", 'gesehen von': "seen by",
 	'Backup aufs Handy speichern': "Save backup to phone", 'Tippen = Backup speichern': "Tap = save backup", 'Backup aller Router': "Back up all routers",
 	'Speichern & einschalten': "Save & turn on", 'Nach Router suchen': "Search for routers", 'unbekannt': "unknown", 'von': "of", 'aktiv': "active",
 	'APP-GERÜST': "APP FRAMEWORK", 'IN DER APP': "IN THE APP", 'AUF DEM ROUTER': "ON THE ROUTER", 'ANDROID': "ANDROID", '(Schrift)': "(font)",
@@ -338,7 +338,7 @@ const EN = {
 };
 
 /* Kurze Wörter, die nur als ganzer Text übersetzt werden (sonst würde z. B. aus „20:30 Uhr“ „20:30 Watch“) */
-const EN_EXACT = new Set([ 'Paket', 'ROUTER', 'von', 'aktiv', 'Uhr', 'Art', 'Band', 'Stand', 'Hell', 'Dunkel', 'Licht', 'Rollo', 'Kabel', 'Telefon', 'Schule', 'Mittel', 'Signal', 'Name', 'Seit', 'Profil', 'Gerät', 'Block' ]);
+const EN_EXACT = new Set([ 'bis', 'Paket', 'ROUTER', 'von', 'aktiv', 'Uhr', 'Art', 'Band', 'Stand', 'Hell', 'Dunkel', 'Licht', 'Rollo', 'Kabel', 'Telefon', 'Schule', 'Mittel', 'Signal', 'Name', 'Seit', 'Profil', 'Gerät', 'Block' ]);
 
 /* Texte mit Zahlen: [Muster, Ersatz] – greifen vor den Textstücken */
 const EN_RX = [

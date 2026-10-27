@@ -669,7 +669,7 @@ VIEWS.device = (v) => {
 };
 /* Verbrauch: Monat (Kennzahlen + letzte 10 Tage) oder letzte Monate – für ein Gerät (mac) oder alle (null) */
 const WD_SHORT = [ 'So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa' ];
-const gbNum = (b) => { const g = (Number(b) || 0) / 1073741824; return (g >= 100 ? String(Math.round(g)) : g.toFixed(g >= 1 ? 1 : 2)).replace('.', ','); };
+const gbNum = (b) => { const g = (Number(b) || 0) / 1073741824; const v = g >= 100 ? String(Math.round(g)) : g.toFixed(g >= 1 ? 1 : 2); return I18N.lang === 'en' ? v : v.replace('.', ','); };
 const ymdOf = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 function usageCard(key, mac) {
 	const mode = S.useMode[key] || 'month';
@@ -716,7 +716,7 @@ function usageCard(key, mac) {
 		const p = Math.round((avg / prevAvg - 1) * 100);
 		chip = `<span class="ph-uchip ${p >= 0 ? 'up' : 'down'}">${p >= 0 ? '▲' : '▼'} ${Math.abs(p)} % pro Tag ggü. ${MONTH_DE[(m + 11) % 12]}</span>`;
 	}
-	const dayName = (ds) => { const d = new Date(+ds.slice(0, 4), +ds.slice(5, 7) - 1, +ds.slice(8, 10)); return WD_SHORT[d.getDay()] + ' ' + d.getDate() + '.' + (d.getMonth() + 1) + '.'; };
+	const dayName = (ds) => { const d = new Date(+ds.slice(0, 4), +ds.slice(5, 7) - 1, +ds.slice(8, 10)); return I18N.t(WD_SHORT[d.getDay()]) + ' ' + d.getDate() + '.' + (d.getMonth() + 1) + '.'; };
 	// letzte 10 Tage (auch über den Monatswechsel)
 	const byDay = {};
 	for (const x of Net.week.days || []) byDay[x.day] = Net.sumMacs(x.macs, mac);
@@ -747,7 +747,7 @@ function usageCard(key, mac) {
 		<div class="ph-ustats">
 			<div><small>Ø pro Tag</small><b class="mono">${fmtBytes(avg)}</b><em>${full.length} ${full.length === 1 ? 'voller Tag' : 'volle Tage'}</em></div>
 			<div><small>Spitzentag</small><b class="mono">${peak ? fmtBytes(peak.bytes) : '–'}</b><em>${peak ? dayName(peak.day) : '–'}</em></div>
-			<div><small>Hochrechnung</small><b class="mono">≈ ${fmtBytes(proj).replace(/,\d+ /, ' ')}</b><em>bis ${dIn}.${m + 1}.</em></div>
+			<div><small>Hochrechnung</small><b class="mono">≈ ${fmtBytes(proj)}</b><em><span>bis</span> ${dIn}.${m + 1}.</em></div>
 		</div>
 		<div class="ph-hrow"><span>Letzte 10 Tage</span><small>Werte in GB</small></div>
 		<div class="ph-uchart">${bars}${avg > 0 ? avgLine(34 + Math.round(H * avg / max)) : ''}</div>
