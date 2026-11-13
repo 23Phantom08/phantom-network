@@ -344,6 +344,8 @@ const EN_EXACT = new Set([ 'bis', 'Paket', 'ROUTER', 'von', 'aktiv', 'Uhr', 'Art
 
 /* Texte mit Zahlen: [Muster, Ersatz] – greifen vor den Textstücken */
 const EN_RX = [
+	[ /^Version (\S+) · auf diesem Handy$/, 'Version $1 · on this phone' ],
+	[ /^Version (\S+) · für OpenWrt-Router$/, 'Version $1 · for OpenWrt routers' ],
 	[ /^Auf dem (.+) läuft jetzt Version$/, '$1 now runs version' ],
 	[ /^Auf dem (.+) läuft$/, '$1 runs' ],
 	[ /^, neu ist$/, ', new is' ],

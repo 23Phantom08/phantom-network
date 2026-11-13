@@ -22,7 +22,7 @@ import * as fs from 'fs';
 import * as uloop from 'uloop';
 import { cursor } from 'uci';
 
-const VERSION = '1.2.0';
+const VERSION = '1.2.1';
 
 // Nur für Tests: Eingaben aus Dateien statt aus dem Kernel
 const TEST = getenv('PHANTOM_TEST');
@@ -138,15 +138,18 @@ function local_dst(ip) {
 	return match(ip, /^(127\.|22[4-9]\.|23[0-9]\.|255\.255\.255\.255)/) || match(ip, /^(fe[89ab]|ff)/);
 }
 
-// Verbindungen der Geräte im Heimnetz: Schlüssel → { src, dst, bytes (beide Richtungen) }
+// alle Verbindungen: Schlüssel → { src, dst, bytes (beide Richtungen) }
 // (der Kernel schreibt IPv6 schon in voller Form – passt direkt zu neighbours())
-function connections(neigh) {
+// Bewusst ALLE Verbindungen, nicht nur die von Geräten mit gerade bekannter MAC: fehlt der
+// Nachbar-Eintrag eines Geräts kurz, darf seine Verbindung nicht aus dem Zählerstand fallen –
+// sonst würde sie danach als „neu“ gelten und ihre gesamte bisherige Datenmenge noch einmal gezählt.
+function connections() {
 	const out = {};
 	const txt = fs.readfile(CT);
 	if (txt == null) return null;
 	for (let l in split(txt, '\n')) {
 		const s0 = match(l, /src=([0-9a-fA-F:.]+)/);
-		if (!s0 || !neigh[s0[1]]) continue;      // nicht von einem Gerät mit bekannter MAC
+		if (!s0) continue;
 		const f = split(trim(l), /\s+/);
 		let key = f[0] + ' ' + f[2], src = null, dst = null, bytes = 0, orig = true, acct = false;
 		for (let i = 3; i < length(f); i++) {
@@ -239,6 +242,7 @@ let saved_at = 0, dirty = false;
 let recut = {};           // neu gesperrt: beim nächsten Durchlauf noch einmal trennen
 let last_dst = null;      // Sommer-/Winterzeit
 let seen = {};            // MAC → Zeitpunkt, an dem das Gerät zuletzt erreichbar war
+let known = {};           // IP → [ MAC, Zeitpunkt ]: letzte bekannte Zuordnung, falls der Nachbar-Eintrag kurz fehlt
 
 function fresh(day) { return { day, bytes: {}, mmin: {}, prof: {}, lim: {} }; }
 
@@ -330,14 +334,17 @@ function count_minute() {
 
 	const minb = +(ctx.get('phantom', 'agent', 'min_bytes') ?? 20000) || 20000;
 	const neigh = neighbours();
-	const cur = connections(neigh);
+	const cur = connections();
 	const own = own_addrs();
 	const delta = {};
+	const t0 = now();
+	for (let ip, mac in neigh) known[ip] = [ mac, t0 ];
+	for (let ip in filter(keys(known), (k) => t0 - known[k][1] > 86400)) delete known[ip];
 
 	if (cur != null && prev != null) {
 		for (let k, x in cur) {
 			if (own[x.src] || own[x.dst] || local_dst(x.dst)) continue;
-			const mac = neigh[x.src];
+			const mac = neigh[x.src] ?? known[x.src]?.[0];
 			if (!mac) continue;
 			const p = prev[k];
 			const d = p != null && x.bytes >= p ? x.bytes - p : x.bytes;
@@ -445,11 +452,11 @@ function tick_minute() {
 if (TEST) {
 	// Test: ein Durchlauf je Aufruf, Zustand liegt in Dateien
 	const t = readjson(STATE + '/test-mem.json', {});
-	prev = t.prev; blocked = t.blocked; recut = t.recut ?? {};
+	prev = t.prev; blocked = t.blocked; recut = t.recut ?? {}; known = t.known ?? {};
 	saved_at = t.saved_at ?? 0;
 	if (t.st) st = t.st;
 	tick_minute();
-	writejson(STATE + '/test-mem.json', { prev, blocked, st, saved_at, recut });
+	writejson(STATE + '/test-mem.json', { prev, blocked, st, saved_at, recut, known });
 	if (length(cut_log)) print('CUT ', join(' ', cut_log), '\n');
 	exit(0);
 }
