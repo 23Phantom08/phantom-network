@@ -1,12 +1,14 @@
 # Phantom Network
 
-Android app to manage OpenWrt mesh routers – devices, family profiles with pauses, schedules and daily limits, Wi‑Fi, VPN and firewall. Local only, no cloud.
+Android app for home networks with one main OpenWrt router and any number of additional OpenWrt access points – devices, family profiles with pauses, schedules and daily limits, data usage, Wi‑Fi, VPN and firewall. Local only, no cloud.
+
+The app works on top of an existing setup: it does not set up routers, access points or the mesh itself – that stays in LuCI.
 
 The app talks directly to your routers through the same interface the OpenWrt web interface (LuCI) uses: ubus JSON‑RPC via `rpcd`. There is no server, no account and no analytics. The UI is available in German and English.
 
 > Built and tested on Cudy routers (WR3000E / WR3000P) running OpenWrt 25.12 – one router as master, the others as mesh access points. Other OpenWrt routers should work as long as they run OpenWrt 25.12 with LuCI.
 
-![Overview, devices, family profile and mesh network](docs/screenshots/preview-1.png)
+![Overview, devices, family profile and network with all routers](docs/screenshots/preview-1.png)
 
 ![Wi-Fi channels, firewall, router packages and custom pause time](docs/screenshots/preview-2.png)
 
@@ -18,7 +20,7 @@ The app talks directly to your routers through the same interface the OpenWrt we
 - **Devices** – grouped by network (any number of networks and VLANs, each with its own tile and color); rename, set the device type, pause internet (30 min, 1 h, until 7 am or any custom duration / time of day), prioritize, fixed IP, data per day and month
 - **Data usage** – per device and for all devices: total this month, change per day vs. last month, average per day, peak day and projection to month end; the last 10 days with the exact value on every bar, recent months with average line, top users of the month
 - **Family** – group devices into profiles; pause a whole profile, bedtime/homework schedules, daily time limit with weekend limit and one‑tap bonus time
-- **Network** – mesh map, Wi‑Fi networks on all routers, guest Wi‑Fi with QR code and timer, night mode, speed test, ping/traceroute, Wi‑Fi channel scan and automatic channel planning
+- **Network** – map of all routers with their connected devices, Wi‑Fi networks on all routers, guest Wi‑Fi with QR code and timer, night mode, speed test, ping/traceroute, Wi‑Fi channel scan and channel suggestion for 2.4 GHz (radios carrying a mesh link are left alone)
 - **Firewall** – read‑only view of port forwards, rules and zones
 - **Routers** – system info, ports, firmware update check (newer release in the same OpenWrt branch), backups to a folder of your choice, restart
 - **Router packages** – install or remove the permission package (per router or on all at once) and the daily limit counter, no SSH needed
