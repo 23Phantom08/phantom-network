@@ -3,6 +3,8 @@
 
 /* ================= Hilfen ================= */
 const $app = document.getElementById('app');
+let APP_VER = '';   // echte Version der installierten App (aus Android)
+const verText = () => 'Version ' + (APP_VER || '–');
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const attr = esc;
 const fmtBytes = (b) => {
@@ -100,6 +102,7 @@ async function saveRouters() {
 
 /* ================= Start ================= */
 async function start() {
+	if (Plat.AppP) { try { APP_VER = (await Plat.AppP.getInfo()).version || ''; } catch (e) { /* bleibt leer */ } }
 	S.theme = await Plat.getPref('theme', 'dark');
 	S.lang = await Plat.getPref('lang', 'auto');
 	I18N.set(S.lang);
@@ -1340,7 +1343,7 @@ VIEWS.more = () => {
 		${item('lock', 'var(--cyan)', 'Verbindung', Net.routers.every((r) => r.proto === 'https') ? 'Alle Router mit HTTPS' : Net.routers.filter((r) => r.proto !== 'https').length + ' Router noch ohne HTTPS', 'conn', Net.routers.some((r) => r.proto !== 'https') ? '<span class="ph-badge new">!</span>' : '')}
 		${item(S.theme === 'light' ? 'sun' : 'moon', 'var(--violet)', 'Darstellung', { dark: 'Dunkel', light: 'Hell', auto: 'Wie das System' }[S.theme], 'look')}
 		${item('globe', 'var(--cyan)', 'Sprache', { auto: 'Wie das System', de: 'Deutsch', en: 'English' }[S.lang] || 'Wie das System', 'lang')}
-		${item('info', 'var(--muted)', 'Über die App', 'Version 1.0', 'about')}
+		${item('info', 'var(--muted)', 'Über die App', verText(), 'about')}
 	</div>
 	<button class="ph-btn danger" data-a="logout">Abmelden</button>`;
 	return { title: 'Mehr', body };
@@ -1559,7 +1562,7 @@ VIEWS.about = () => {
 		[ 'lock', 'Passwort bleibt auf dem Handy', 'Verschlüsselt im Android-Schlüsselspeicher, nie im Klartext.' ],
 		[ 'bell', 'Hintergrund-Check', 'Etwa alle 15 Minuten: neue Geräte, Fehler, Router offline, Firmware-Updates, Tageslimit.' ]
 	];
-	let body = `<div class="ph-card pad ph-about"><img src="img/logo-full.webp" alt=""><b>Phantom Network</b><div class="ph-sub">Version 1.0 · für OpenWrt-Router</div>
+	let body = `<div class="ph-card pad ph-about"><img src="img/logo-full.webp" alt=""><b>Phantom Network</b><div class="ph-sub">${esc(verText())} · für OpenWrt-Router</div>
 		<div class="ph-chips" style="justify-content:center">${tag('info', 'OpenWrt 25.12')}${tag('violet', 'ohne Cloud')}</div></div>`;
 	body += `<div class="ph-h" style="padding:0 4px">DEIN NETZ</div><div class="ph-stats">
 		<div class="ph-card pad ph-stat"><b class="mono">${Net.routers.length}</b><span>Router</span></div>
@@ -1568,7 +1571,7 @@ VIEWS.about = () => {
 	body += `<div class="ph-h" style="padding:0 4px">AKTUELL?</div><div class="ph-card list">
 		${row(icon('router', 20, 'var(--cyan)'), 'rgba(34,227,255,.12)', 'Router-Firmware', fwSub, upd.length ? tag('warn', 'Update verfügbar') : ok.length ? tag('ok', 'aktuell') : '', 'push', 'cudys')}
 		${row(icon('clock', 20, 'var(--violet)'), 'rgba(168,85,247,.14)', 'Tageslimit-Zähler', agentSub, agentTag, caps.helper ? 'cudy' : 'tab', caps.helper ? Net.master.id : 'fam')}
-		${row(icon('phone', 20, 'var(--warn)'), 'rgba(245,184,91,.14)', 'App', 'Version 1.0 · auf diesem Handy', '', '', '')}</div>`;
+		${row(icon('phone', 20, 'var(--warn)'), 'rgba(245,184,91,.14)', 'App', verText() + ' · auf diesem Handy', '', '', '')}</div>`;
 	body += `<div class="ph-h" style="padding:0 4px">SO FUNKTIONIERT’S</div><div class="ph-card pad ph-facts">${facts.map(([ ic, t, d ]) => `<div>${icon(ic, 20, 'var(--cyan)')}<span><b>${t}</b><small>${d}</small></span></div>`).join('')}</div>`;
 	body += `<div class="ph-h" style="padding:0 4px">RECHTLICHES</div><div class="ph-card list">
 		${row(icon('doc', 20, 'var(--soft)'), 'rgba(168,85,247,.12)', 'Open-Source-Lizenzen', 'Bausteine, auf denen die App aufbaut', icon('next', 18, 'var(--muted)'), 'push', 'licenses')}

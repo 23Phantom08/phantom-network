@@ -848,7 +848,7 @@ const Net = {
 	   Installation wie „Paket hochladen“ in der Weboberfläche: Paket nach /tmp/upload.apk,
 	   dann die Paketverwaltung des Routers. Das Paket ist mit eigenem Schlüssel signiert;
 	   der öffentliche Schlüssel liegt nur während der Installation auf dem Router. */
-	AGENT_VER: '1.2.0',
+	AGENT_VER: '1.2.1',
 	// was die neue Zähler-Version bringt (Hinweis auf der Übersicht)
 	AGENT_NEWS: 'erkennt Geräte am Kabel hinter Access Points und ausgeschaltete Geräte zuverlässiger.',
 	agentVer() { return (this.today && this.today.ver) || ''; },
@@ -915,11 +915,30 @@ const Net = {
 		}
 	},
 	async cronSet(r, key, lines) {
+		const PATH = '/etc/crontabs/root';
 		const tag = '# phantom:' + key;
-		const keep = (await this.cronRead(r)).split('\n').filter((l) => l.trim() && !l.endsWith(tag));
-		const out = keep.concat(lines.map((l) => l + ' ' + tag));
-		const data = out.length ? out.join('\n') + '\n' : '';
-		await r.call('file', 'write', { path: '/etc/crontabs/root', data });
+		const add = lines.map((l) => l + ' ' + tag);
+		let cur = await this.cronRead(r), data = cur;
+		const has = (t) => t.split('\n').some((l) => l.endsWith(tag));
+		if (add.length && !has(cur)) {
+			// nur etwas Neues: der Router hängt es selbst an – ohne die Datei vom Handy aus neu zu schreiben,
+			// so kann eine gleichzeitige Änderung (zweites Handy, abgelaufene Zeile) nicht verloren gehen
+			const more = (cur && !cur.endsWith('\n') ? '\n' : '') + add.join('\n') + '\n';
+			await r.call('file', 'write', { path: PATH, data: more, append: true });
+			data = cur + more;
+		} else {
+			// ersetzen/entfernen: direkt vor dem Schreiben noch einmal lesen – hat sich die Liste inzwischen
+			// geändert, auf dem neuen Stand neu rechnen statt den alten darüberzuschreiben
+			for (let i = 0; ; i++) {
+				const out = cur.split('\n').filter((l) => l.trim() && !l.endsWith(tag)).concat(add);
+				data = out.length ? out.join('\n') + '\n' : '';
+				if (data === cur) break;
+				const now = await this.cronRead(r);
+				if (now !== cur && i < 3) { cur = now; continue; }
+				await r.call('file', 'write', { path: PATH, data });
+				break;
+			}
+		}
 		await r.exec('/etc/init.d/cron', [ 'reload' ]).catch(() => {});
 		this.cron[r.id] = data;
 	},
