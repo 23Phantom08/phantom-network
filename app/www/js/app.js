@@ -220,7 +220,7 @@ async function doLogin() {
 	const host = L.host.replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
 	let r = Net.routers.find((x) => x.host === host);
 	if (!r) r = new Router({ id: uid(), host, proto: L.proto, role: 'router', name: (L.found && L.found.ip === host && L.found.name) || host });
-	r.proto = S.allowHttp ? L.proto : defProto();
+	r.proto = L.proto;
 	try {
 		await loginRoot(r, L.pw);
 		const net = await r.uciGet('network').catch(() => ({}));
@@ -241,7 +241,8 @@ async function doLogin() {
 	} catch (e) {
 		L.busy = false;
 		if (e.needTrust) { trustSheet(r, e.fingerprint, doLogin); return; }
-		L.err = /Anmeldung|Keine Berechtigung|Fehler 6/.test(e.message) ? 'Passwort falsch oder Benutzer gesperrt.' : 'Keine Verbindung zu ' + host + ' (' + e.message + ')';
+		L.err = /Anmeldung|Keine Berechtigung|Fehler 6/.test(e.message) ? 'Passwort falsch oder Benutzer gesperrt.' : 'Keine Verbindung zu ' + host + ' (' + e.message + ')'
+			+ (r.proto === 'https' && !e.ubus ? '. Der Router hat vielleicht kein HTTPS – oben HTTP wählen und noch einmal anmelden.' : '');
 		render();
 	}
 }
@@ -446,7 +447,7 @@ function loginView() {
 		${found}
 		<form data-f="login" onsubmit="return false">
 			<label class="ph-field">Adresse des Masters<input name="host" inputmode="url" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="z. B. 192.168.1.1 oder phantom.lan" value="${attr(L.host)}"></label>
-			${S.allowHttp ? `<div class="ph-chips">${chip(L.proto === 'https', 'proto', 'https', 'HTTPS (Standard)')}${chip(L.proto === 'http', 'proto', 'http', 'HTTP')}</div>` : ''}
+			<div class="ph-chips">${chip(L.proto === 'https', 'proto', 'https', 'HTTPS (Standard)')}${chip(L.proto === 'http', 'proto', 'http', 'HTTP')}</div>
 			<label class="ph-field">Benutzer<input name="user" value="root" disabled></label>
 			<label class="ph-field">Passwort<input name="pw" type="password" autocomplete="current-password" value="${attr(L.pw)}"></label>
 			<label class="ph-check"><input type="checkbox" name="remember" ${L.remember ? 'checked' : ''}>Angemeldet bleiben (Passwort im Android-Schlüsselspeicher)</label>
@@ -1633,7 +1634,12 @@ A.sheetBg = (x, el, ev) => { if (ev.target === el) closeSheet(); };
 A.trust = () => S.sheet && S.sheet.onTrust && S.sheet.onTrust();
 
 A.search = () => searchMaster();
-A.proto = (x) => { readForm(); S.login.proto = x; render(); };
+// HTTP schon bei der Anmeldung wählbar (Router ohne luci-ssl) – das schaltet „HTTP erlauben“ gleich mit ein
+A.proto = (x) => {
+	readForm(); S.login.proto = x;
+	if (x === 'http' && !S.allowHttp) { S.allowHttp = true; Plat.setPref('allowHttp', true); }
+	render();
+};
 A.login = () => doLogin();
 A.logout = () => {
 	openSheet(`<h2>Abmelden?</h2><div class="ph-hint">Das gespeicherte Passwort des Masters wird vom Handy gelöscht. Auf den Router ändert sich nichts.</div>

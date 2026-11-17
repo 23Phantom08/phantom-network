@@ -35,7 +35,7 @@ const EN = {
 	// Anmeldung, Start
 	'Master nicht erreichbar:': "Master unreachable:", 'Bitte die Adresse des Masters eingeben.': "Please enter the master's address.",
 	'Bitte das Passwort eingeben.': "Please enter the password.", 'Hinweis: Dieser Router hat keinen Internet-Anschluss (kein Master?)': "Note: this router has no internet connection (not the master?)",
-	'Passwort falsch oder Benutzer gesperrt.': "Wrong password or user locked.", 'Keine Verbindung zu': "No connection to", 'Zertifikat bestätigen': "Confirm certificate",
+	'Passwort falsch oder Benutzer gesperrt.': "Wrong password or user locked.", 'Keine Verbindung zu': "No connection to", 'Der Router hat vielleicht kein HTTPS – oben HTTP wählen und noch einmal anmelden.': "The router may not have HTTPS – choose HTTP above and sign in again.", 'Zertifikat bestätigen': "Confirm certificate",
 	'Passwort nötig': "Password needed", ': Passwort nötig': ": password needed", 'Zertifikat hat sich geändert!': "Certificate has changed!", 'Bitte neu anmelden.': "Please sign in again.",
 	'antwortet nicht': "not responding", 'Verbinde mit dem Master …': "Connecting to the master …", 'Phantom Network startet …': "Phantom Network is starting …",
 	'Router im WLAN gefunden': "Router found on Wi‑Fi", 'Router im Netz': "Routers on the network", 'HTTPS (Standard)': "HTTPS (default)", 'Anmelden': "Sign in",
