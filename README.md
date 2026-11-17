@@ -27,7 +27,7 @@ The app talks directly to your routers through the same interface the OpenWrt we
 - **Device log** – connections, roaming between routers and bands, new devices and IP assignments from all routers
 - **VPN** – WireGuard server on the master: create phone access with QR code, switch the tunnel on this phone
 - **Notifications** – background check about every 15 minutes (over plain HTTP only on Wi‑Fi, LAN or VPN, never over mobile data): new devices, errors, routers offline, firmware updates, daily limit reached (with “+30 min” action)
-- **Security** – HTTPS by default with certificate pinning on first use, optional app login with password and fingerprint
+- **Security** – HTTP by default (works on every OpenWrt router), optional HTTPS per router with certificate pinning on first use, optional app login with password and fingerprint
 
 ## Installation
 

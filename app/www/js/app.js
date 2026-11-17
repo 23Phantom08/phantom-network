@@ -60,7 +60,6 @@ const S = {
 	sheet: null,
 	toast: null,
 	login: { host: '', proto: 'https', pw: '', remember: true, searching: false, found: null, gateway: null, err: '', busy: false },
-	allowHttp: false,
 	lock: { on: false, user: '', fp: false, delay: 1, asked: false },
 	locked: false, unlockErr: '', unlockRouter: false, bioOk: false,
 	discovered: [],
@@ -78,7 +77,8 @@ const S = {
 };
 
 /* HTTPS ist Standard (App). Im Browser geht nur das Protokoll der Seite selbst – dort ohne Zertifikat-Merken. */
-function defProto() { return Plat.native ? 'https' : (location.protocol === 'https:' ? 'https' : 'http'); }
+// Standard ist HTTP: das kann jeder OpenWrt-Router von Haus aus. HTTPS (braucht luci-ssl) lässt sich je Router einschalten.
+function defProto() { return Plat.native ? 'http' : (location.protocol === 'https:' ? 'https' : 'http'); }
 
 function toast(msg, err) {
 	S.toast = { msg, err };
@@ -111,7 +111,6 @@ async function start() {
 	S.notify.kinds = (S.notify.kinds || []).filter((k) => NOTIFY_KINDS[k]);
 	if (!S.notify.v2) { if (!S.notify.kinds.includes('fw')) S.notify.kinds.push('fw'); S.notify.v2 = true; }   // neue Art einmalig mit einschalten
 	if (!S.notify.v3) { for (const k of [ 'limit', 'limitwarn' ]) if (!S.notify.kinds.includes(k)) S.notify.kinds.push(k); S.notify.v3 = true; }
-	S.allowHttp = await Plat.getPref('allowHttp', false);
 	S.lock = Object.assign({}, S.lock, await Plat.getPref('lock', {}));
 	S.bioOk = await Plat.biometricAvailable();
 	Router.onPin = () => saveRouters();   // HTTPS: beim ersten Kontakt gemerktes Zertifikat sichern
@@ -242,7 +241,8 @@ async function doLogin() {
 		L.busy = false;
 		if (e.needTrust) { trustSheet(r, e.fingerprint, doLogin); return; }
 		L.err = /Anmeldung|Keine Berechtigung|Fehler 6/.test(e.message) ? 'Passwort falsch oder Benutzer gesperrt.' : 'Keine Verbindung zu ' + host + ' (' + e.message + ')'
-			+ (r.proto === 'https' && !e.ubus ? '. Der Router hat vielleicht kein HTTPS – oben HTTP wählen und noch einmal anmelden.' : '');
+			+ (e.ubus ? '' : r.proto === 'https' ? '. Der Router hat vielleicht kein HTTPS – oben HTTP wählen und noch einmal anmelden.'
+				: '. Lässt der Router nur HTTPS zu? Dann oben HTTPS wählen und noch einmal anmelden.');
 		render();
 	}
 }
@@ -260,9 +260,10 @@ async function addDiscovered(pw) {
 		added++;
 		if (pw) {
 			try { await loginRoot(r, pw); } catch (e) {
-				// kein HTTPS auf diesem Router? nur mit „HTTP erlauben“ auf HTTP ausweichen
-				if (!e.needTrust && !e.ubus && S.allowHttp) { r.proto = 'http'; try { await loginRoot(r, pw); continue; } catch (e2) { /* unten */ } }
-				r.lastError = e.needTrust ? 'Zertifikat bestätigen' : 'Passwort nötig';
+				// über HTTP nicht erreichbar (Router lässt nur HTTPS zu)? dann einmal HTTPS versuchen
+				let err = e;
+				if (!e.needTrust && !e.ubus) { r.proto = 'https'; try { await loginRoot(r, pw); continue; } catch (e2) { if (e2.needTrust) err = e2; else r.proto = defProto(); } }
+				r.lastError = err.needTrust ? 'Zertifikat bestätigen' : 'Passwort nötig';
 			}
 		}
 	}
@@ -447,7 +448,7 @@ function loginView() {
 		${found}
 		<form data-f="login" onsubmit="return false">
 			<label class="ph-field">Adresse des Masters<input name="host" inputmode="url" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="z. B. 192.168.1.1 oder phantom.lan" value="${attr(L.host)}"></label>
-			<div class="ph-chips">${chip(L.proto === 'https', 'proto', 'https', 'HTTPS (Standard)')}${chip(L.proto === 'http', 'proto', 'http', 'HTTP')}</div>
+			<div class="ph-chips">${chip(L.proto === 'http', 'proto', 'http', 'HTTP (Standard)')}${chip(L.proto === 'https', 'proto', 'https', 'HTTPS')}</div>
 			<label class="ph-field">Benutzer<input name="user" value="root" disabled></label>
 			<label class="ph-field">Passwort<input name="pw" type="password" autocomplete="current-password" value="${attr(L.pw)}"></label>
 			<label class="ph-check"><input type="checkbox" name="remember" ${L.remember ? 'checked' : ''}>Angemeldet bleiben (Passwort im Android-Schlüsselspeicher)</label>
@@ -1383,12 +1384,11 @@ VIEWS.conn = () => {
 		const on = r.proto === 'https';
 		const sub = r.proto + '://' + r.host + (on && r.pin ? ' · SHA-256 ' + r.pin.slice(0, 5) + '…' + r.pin.slice(-2) : '');
 		return `<div class="ph-row"><div class="ph-grow"><b>${esc(r.name || r.host)}</b><small class="mono">${esc(sub)}</small>
-			${S.allowHttp ? `<div class="ph-chips" style="margin-top:6px">${chip(on, 'setProto', r.id + '|https', 'HTTPS')}${chip(!on, 'setProto', r.id + '|http', 'HTTP')}</div>` : ''}
+			<div class="ph-chips" style="margin-top:6px">${chip(!on, 'setProto', r.id + '|http', 'HTTP')}${chip(on, 'setProto', r.id + '|https', 'HTTPS')}</div>
 			${on && r.pin ? `<button class="ph-link" data-a="forgetPin" data-x="${r.id}" style="font-size:12px">Zertifikat vergessen</button>` : ''}</div>
 			${tag(on ? 'ok' : 'warn', on ? 'HTTPS' : 'HTTP')}</div>`;
 	}).join('') + '</div>';
-	body += `<div class="ph-card rows">${swRow('HTTP erlauben', 'Nur für Router ohne HTTPS (ältere OpenWrt-Versionen)', S.allowHttp, 'allowHttp', '')}</div>
-		<div class="ph-dim">Neue Router verbindet die App immer zuerst über HTTPS. Zurück auf HTTP fällt sie nie von selbst – das würde Angreifern helfen.</div>
+	body += `<div class="ph-dim">Neue Router verbindet die App über HTTP – das kann jeder OpenWrt-Router. HTTPS (braucht luci-ssl auf dem Router) schaltest du hier je Router ein. Von HTTPS zurück auf HTTP fällt die App nie von selbst.</div>
 		<div class="ph-card rows"><div class="ph-h">DATEN</div>${kv('Quelle', 'Router (live)')}${kv('Stand', Net.loadedAt ? fmtTime(Net.loadedAt) : '–')}${kv('Automatisch neu laden', 'alle 20 s, beim Öffnen')}</div>
 		<button class="ph-btn" data-a="refresh">${icon('refresh', 18)}&nbsp; Jetzt neu laden</button>`;
 	return { title: 'Verbindung', body };
@@ -1634,12 +1634,7 @@ A.sheetBg = (x, el, ev) => { if (ev.target === el) closeSheet(); };
 A.trust = () => S.sheet && S.sheet.onTrust && S.sheet.onTrust();
 
 A.search = () => searchMaster();
-// HTTP schon bei der Anmeldung wählbar (Router ohne luci-ssl) – das schaltet „HTTP erlauben“ gleich mit ein
-A.proto = (x) => {
-	readForm(); S.login.proto = x;
-	if (x === 'http' && !S.allowHttp) { S.allowHttp = true; Plat.setPref('allowHttp', true); }
-	render();
-};
+A.proto = (x) => { readForm(); S.login.proto = x; render(); };
 A.login = () => doLogin();
 A.logout = () => {
 	openSheet(`<h2>Abmelden?</h2><div class="ph-hint">Das gespeicherte Passwort des Masters wird vom Handy gelöscht. Auf den Router ändert sich nichts.</div>
@@ -2057,7 +2052,7 @@ A.addCudy = () => {
 	S.addProto = defProto();
 	openSheet(`<h2>Router von Hand hinzufügen</h2>
 		<label class="ph-field">IP-Adresse oder Name<input id="aHost" placeholder="z. B. 192.168.1.2" autocapitalize="off" spellcheck="false"></label>
-		${S.allowHttp ? `<div class="ph-chips" id="aProto">${chip(S.addProto === 'https', 'aProto', 'https', 'HTTPS')}${chip(S.addProto === 'http', 'aProto', 'http', 'HTTP')}</div>` : ''}
+		<div class="ph-chips" id="aProto">${chip(S.addProto === 'http', 'aProto', 'http', 'HTTP')}${chip(S.addProto === 'https', 'aProto', 'https', 'HTTPS')}</div>
 		<label class="ph-field">Passwort (leer = wie Master)<input id="aPw" type="password"></label>
 		<button class="ph-btn primary" data-a="addCudyYes">Hinzufügen</button><button class="ph-btn" data-a="sheetClose">Abbrechen</button>`);
 };
@@ -2094,7 +2089,6 @@ A.setProto = async (x) => {
 		}
 	}, r.name + ': ' + p.toUpperCase());
 };
-A.allowHttp = async () => { S.allowHttp = !S.allowHttp; await Plat.setPref('allowHttp', S.allowHttp); renderSoft(); };
 A.allHttps = () => act('allHttps', async () => {
 	const bad = [];
 	for (const r of Net.routers.filter((x) => x.proto !== 'https')) {
